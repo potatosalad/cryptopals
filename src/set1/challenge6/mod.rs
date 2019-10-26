@@ -148,6 +148,7 @@ mod tests {
         assert_eq!(vec![(1.2, 5), (2.0, 3), (2.5, 2)], &key_sizes[..3]);
     }
 
+    #[ignore]
     #[test]
     fn repeating_key_xor_solver() {
         use super::RepeatingKeyXorSolver;
