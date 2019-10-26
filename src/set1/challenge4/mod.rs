@@ -1,20 +1,65 @@
-use crate::set1::challenge3::english_decrypter;
+pub use crate::set1::challenge3::english_decrypter::{self, RankedByte};
 
-pub fn from_base16_lines_to_match_vec(input: &str) -> Vec<english_decrypter::Match> {
-    let mut matches: Vec<english_decrypter::Match> = input
+pub fn from_base16_lines_to_match_vec(input: &str) -> Vec<RankedByte> {
+    let blocks: Vec<Block> = input
         .split('\n')
-        .filter_map(|line| {
-            english_decrypter::decrypt_base16(&line)
-                .ok()
-                .and_then(|mut option| option.take())
-        })
+        .filter_map(|line| hex::decode(&line).ok())
         .collect();
-    matches.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
-    matches
+    SingleByteXorSolver::new(&blocks).decrypt_and_rank_bytes()
 }
 
-pub fn from_base16_lines_to_match(input: &str) -> Option<english_decrypter::Match> {
+pub fn from_base16_lines_to_match(input: &str) -> Option<RankedByte> {
     from_base16_lines_to_match_vec(input).first().cloned()
+}
+
+pub type Block = Vec<u8>;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SingleByteXorSolver<'a> {
+    blocks: &'a [Block],
+}
+
+impl<'a> SingleByteXorSolver<'a> {
+    pub fn new<T: ?Sized + AsRef<[Block]>>(blocks: &'a T) -> SingleByteXorSolver {
+        SingleByteXorSolver {
+            blocks: blocks.as_ref(),
+        }
+    }
+
+    pub fn decrypt_all_blocks(&self) -> Option<Vec<RankedByte>> {
+        let ranked_bytes = self.decrypt_and_rank_bytes();
+        if self.blocks.len() > ranked_bytes.len() {
+            None
+        } else {
+            use std::collections::BTreeMap;
+            let mut map: BTreeMap<usize, RankedByte> = BTreeMap::new();
+            for ranked_byte in ranked_bytes {
+                if let Some(value) = map.get(&ranked_byte.index) {
+                    if ranked_byte.score > value.score {
+                        map.insert(ranked_byte.index, ranked_byte);
+                    }
+                } else {
+                    map.insert(ranked_byte.index, ranked_byte);
+                }
+            }
+            Some(map.into_iter().map(|(_, value)| value).collect())
+        }
+    }
+
+    pub fn decrypt_and_rank_bytes(&self) -> Vec<RankedByte> {
+        let mut matches: Vec<RankedByte> = self
+            .blocks
+            .iter()
+            .enumerate()
+            .filter_map(|(index, block)| english_decrypter::decrypt(&block, index))
+            .collect();
+        matches.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+        matches
+    }
+
+    pub fn decrypt_and_guess_byte(&self) -> Option<RankedByte> {
+        self.decrypt_and_rank_bytes().first().cloned()
+    }
 }
 
 #[cfg(test)]

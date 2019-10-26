@@ -7,6 +7,9 @@
 )]
 
 #[cfg(test)]
+#[macro_use(lazy_static)]
+extern crate lazy_static;
+#[cfg(test)]
 extern crate quickcheck;
 #[cfg(test)]
 #[macro_use(quickcheck)]
