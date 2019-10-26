@@ -7,7 +7,7 @@ mod tests {
     #[test]
     fn implement_repeating_key_xor() {
         use super::RepeatingKeyXor;
-        use crate::set1::challenge1::base16;
+        use crate::set01::challenge01::base16;
         let plaintext =
             "Burning \'em, if you ain\'t quick and nimble\nI go crazy when I hear a cymbal";
         let key = "ICE";

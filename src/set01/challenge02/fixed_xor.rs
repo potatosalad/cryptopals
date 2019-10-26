@@ -1,4 +1,4 @@
-use crate::set1::challenge1::base16::{self, decoder::Base16DecoderError};
+use crate::set01::challenge01::base16::{self, decoder::Base16DecoderError};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum FixedXorError {

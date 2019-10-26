@@ -1,4 +1,4 @@
-pub use crate::set1::challenge3::english_decrypter::{self, RankedByte};
+pub use crate::set01::challenge03::english_decrypter::{self, RankedByte};
 
 pub fn from_base16_lines_to_match_vec(input: &str) -> Vec<RankedByte> {
     let blocks: Vec<Block> = input

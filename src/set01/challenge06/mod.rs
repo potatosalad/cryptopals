@@ -1,5 +1,5 @@
-use crate::set1::challenge4::{Block, SingleByteXorSolver};
-pub use crate::set1::challenge5::RepeatingKeyXor;
+use crate::set01::challenge04::{Block, SingleByteXorSolver};
+pub use crate::set01::challenge05::RepeatingKeyXor;
 
 pub fn hamming_distance<X: ?Sized + AsRef<[u8]>, Y: ?Sized + AsRef<[u8]>>(xs: &X, ys: &Y) -> u32 {
     xs.as_ref()
