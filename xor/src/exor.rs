@@ -1,5 +1,22 @@
 // Exclusive (fixed-length) XOR
 
+#[derive(Debug, Clone)]
+pub struct ExclusiveFixedXorError;
+
+// This is important for other errors to wrap this one.
+impl std::error::Error for ExclusiveFixedXorError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        // Generic error, underlying cause isn't tracked.
+        None
+    }
+}
+
+impl std::fmt::Display for ExclusiveFixedXorError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "exor may only be performed on same-length inputs")
+    }
+}
+
 pub trait ExclusiveFixedXor<T> {
     fn exor<I: std::iter::FromIterator<u8>>(&self, _: &T) -> crate::Result<I>;
 }
@@ -13,7 +30,8 @@ impl<T: Sized + AsRef<[u8]>, U: ?Sized + AsRef<[u8]>> ExclusiveFixedXor<T> for U
         let a = self.as_ref();
         let b = t.as_ref();
         if a.len() != b.len() {
-            return Err("exor may only be performed on same-length inputs".into());
+            return Err(ExclusiveFixedXorError.into());
+            // return Err("exor may only be performed on same-length inputs".into());
         }
         Ok(a.iter().zip(b.iter()).map(|(&c, &d)| c ^ d).collect())
     }
@@ -24,7 +42,8 @@ impl<T: Sized + AsRef<[u8]>, U: ?Sized + AsMut<[u8]>> ExclusiveFixedXorMut<T> fo
         let a = self.as_mut();
         let b = t.as_ref();
         if a.len() != b.len() {
-            return Err("exor may only be performed on same-length inputs".into());
+            return Err(ExclusiveFixedXorError.into());
+            // return Err("exor may only be performed on same-length inputs".into());
         }
         a.iter_mut().zip(b.iter()).for_each(|(c, &d)| {
             *c ^= d;
@@ -36,6 +55,7 @@ impl<T: Sized + AsRef<[u8]>, U: ?Sized + AsMut<[u8]>> ExclusiveFixedXorMut<T> fo
 #[cfg(test)]
 mod tests {
     use super::{ExclusiveFixedXor, ExclusiveFixedXorMut};
+    use quickcheck::TestResult;
 
     #[test]
     fn exor_sanity_check() -> crate::Result<()> {
@@ -58,17 +78,24 @@ mod tests {
     }
 
     #[quickcheck]
-    fn prop_exor_twice_is_identity(xs: Vec<u8>) -> bool {
-        let mut ys: Vec<u8> = xs.exor(&xs).unwrap();
-        ys.exor_mut(&xs).unwrap();
-        ys == xs
+    fn prop_exor_twice_is_identity(xs: Vec<u8>, ys: Vec<u8>) -> TestResult {
+        let xlen = xs.len();
+        let ylen = ys.len();
+        let test = move || {
+            test_exor_twice_is_identity(xs, ys)
+                .map_err(|_| false)
+                .unwrap()
+        };
+        if xlen != ylen {
+            TestResult::must_fail(test)
+        } else {
+            TestResult::from_bool(test())
+        }
     }
 
-    #[quickcheck]
-    fn prop_exor_is_reversible(xs: Vec<u8>) -> bool {
-        let ys: Vec<u8> = vec![1_u8; xs.len()];
-        let mut zs: Vec<u8> = xs.exor(&ys).unwrap();
-        zs.exor_mut(&xs).unwrap();
-        ys == zs
+    fn test_exor_twice_is_identity(xs: Vec<u8>, ys: Vec<u8>) -> crate::Result<bool> {
+        let mut zs: Vec<u8> = xs.exor(&ys)?;
+        zs.exor_mut(&ys)?;
+        Ok(zs == xs)
     }
 }
