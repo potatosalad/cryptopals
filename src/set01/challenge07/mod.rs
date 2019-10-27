@@ -17,22 +17,22 @@ impl AesKey {
         AesKey::Aes256Key(value)
     }
 
-    pub fn as_block_cipher(&self) -> AesBlockCipher {
+    pub fn as_aes_ecb_block_cipher(&self) -> AesEcbBlockCipher {
         use aes::block_cipher_trait::{generic_array::GenericArray, BlockCipher};
         match self {
-            Self::Aes128Key(ref key) => AesBlockCipher::Aes128BlockCipher(Box::new(
+            Self::Aes128Key(ref key) => AesEcbBlockCipher::Aes128BlockCipher(Box::new(
                 aes::Aes128::new(&GenericArray::clone_from_slice(&key[..])),
             )),
-            Self::Aes192Key(ref key) => AesBlockCipher::Aes192BlockCipher(Box::new(
+            Self::Aes192Key(ref key) => AesEcbBlockCipher::Aes192BlockCipher(Box::new(
                 aes::Aes192::new(&GenericArray::clone_from_slice(&key[..])),
             )),
-            Self::Aes256Key(ref key) => AesBlockCipher::Aes256BlockCipher(Box::new(
+            Self::Aes256Key(ref key) => AesEcbBlockCipher::Aes256BlockCipher(Box::new(
                 aes::Aes256::new(&GenericArray::clone_from_slice(&key[..])),
             )),
         }
     }
 
-    pub fn try_copy_from<K: ?Sized + AsRef<[u8]>>(bytes: &K) -> Result<AesKey, AesError> {
+    pub fn try_copy_bytes<K: ?Sized + AsRef<[u8]>>(bytes: &K) -> Result<AesKey, AesError> {
         let bytes = bytes.as_ref();
         match bytes.len() {
             16 => {
@@ -55,13 +55,13 @@ impl AesKey {
     }
 }
 
-pub enum AesBlockCipher {
+pub enum AesEcbBlockCipher {
     Aes128BlockCipher(Box<aes::Aes128>),
     Aes192BlockCipher(Box<aes::Aes192>),
     Aes256BlockCipher(Box<aes::Aes256>),
 }
 
-impl AesBlockCipher {
+impl AesEcbBlockCipher {
     pub fn decrypt_block<T: ?Sized + AsRef<[u8]>>(
         &self,
         ciphertext: &T,
@@ -105,6 +105,10 @@ impl AesBlockCipher {
 pub enum AesError {
     InvalidBlockSize(usize),
     InvalidKeySize(usize),
+    InvalidInitializationVectorSize {
+        explanation: &'static str,
+        was: usize,
+    },
 }
 
 impl std::error::Error for AesError {
@@ -113,6 +117,7 @@ impl std::error::Error for AesError {
         match *self {
             Self::InvalidBlockSize(_) => "invalid block size",
             Self::InvalidKeySize(_) => "invalid key size",
+            Self::InvalidInitializationVectorSize { .. } => "invalid initialization vector size",
         }
     }
 }
@@ -128,17 +133,22 @@ impl ::core::fmt::Display for AesError {
             Self::InvalidKeySize(size) => {
                 write!(f, "Invalid key size of '{}' must be 16, 24, or 32", size)
             }
+            Self::InvalidInitializationVectorSize { was, explanation } => write!(
+                f,
+                "Invalid initialization vector size of '{}' {}",
+                was, explanation
+            ),
         }
     }
 }
 
-pub struct AesEcbBlockCipher<'k> {
+pub struct AesEcbCipher<'k> {
     key: &'k AesKey,
 }
 
-impl<'k> AesEcbBlockCipher<'k> {
-    pub fn new(key: &'k AesKey) -> AesEcbBlockCipher<'k> {
-        AesEcbBlockCipher { key }
+impl<'k> AesEcbCipher<'k> {
+    pub fn new(key: &'k AesKey) -> AesEcbCipher<'k> {
+        AesEcbCipher { key }
     }
 
     pub fn decrypt<T: ?Sized + AsRef<[u8]>>(&self, ciphertext: &T) -> Result<Vec<u8>, AesError> {
@@ -147,7 +157,7 @@ impl<'k> AesEcbBlockCipher<'k> {
             0 => Ok(vec![]),
             x => {
                 if x % 16 == 0 {
-                    let block_cipher = self.key.as_block_cipher();
+                    let block_cipher = self.key.as_aes_ecb_block_cipher();
                     Ok(ciphertext
                         .chunks(16_usize)
                         .flat_map(|block| block_cipher.decrypt_block(&block).unwrap().into_iter())
@@ -165,7 +175,7 @@ impl<'k> AesEcbBlockCipher<'k> {
             0 => Ok(vec![]),
             x => {
                 if x % 16 == 0 {
-                    let block_cipher = self.key.as_block_cipher();
+                    let block_cipher = self.key.as_aes_ecb_block_cipher();
                     Ok(plaintext
                         .chunks(16_usize)
                         .flat_map(|block| block_cipher.encrypt_block(&block).unwrap().into_iter())
@@ -185,8 +195,8 @@ impl AesEcb {
         key: &K,
         ciphertext: &T,
     ) -> Result<Vec<u8>, AesError> {
-        let key = AesKey::try_copy_from(key)?;
-        let cipher = AesEcbBlockCipher::new(&key);
+        let key = AesKey::try_copy_bytes(key)?;
+        let cipher = AesEcbCipher::new(&key);
         cipher.decrypt(ciphertext)
     }
 
@@ -194,8 +204,8 @@ impl AesEcb {
         key: &K,
         plaintext: &T,
     ) -> Result<Vec<u8>, AesError> {
-        let key = AesKey::try_copy_from(key)?;
-        let cipher = AesEcbBlockCipher::new(&key);
+        let key = AesKey::try_copy_bytes(key)?;
+        let cipher = AesEcbCipher::new(&key);
         cipher.encrypt(plaintext)
     }
 }
@@ -217,22 +227,25 @@ mod tests {
         let aes_192_key = "YELLOW SUBMARINE FOREVER";
         let aes_256_key = "YELLOW SUBMARINE FOREVER & EVER!";
         let plaintext = "abcdefghijklmnopqrstuvwxyz012345";
-        let aes_128_ciphertext = "bdb184d44e1fc1d3060945b53c994f48fc2038858f1a6c91d312c5a0d554bacb";
-        let aes_192_ciphertext = "a713d164c85cad00cced99b1390c60cb554f37382a93bd6a1a07663758a0adf6";
-        let aes_256_ciphertext = "7d2983a43521deb4e466c19d9ec2da0a78c55d0746ca603d16cad1bef78fa55e";
+        let aes_128_ecb_ciphertext =
+            "bdb184d44e1fc1d3060945b53c994f48fc2038858f1a6c91d312c5a0d554bacb";
+        let aes_192_ecb_ciphertext =
+            "a713d164c85cad00cced99b1390c60cb554f37382a93bd6a1a07663758a0adf6";
+        let aes_256_ecb_ciphertext =
+            "7d2983a43521deb4e466c19d9ec2da0a78c55d0746ca603d16cad1bef78fa55e";
         let challenge_aes_128_ecb_ciphertext = AesEcb::encrypt(&aes_128_key, &plaintext).unwrap();
         let challenge_aes_192_ecb_ciphertext = AesEcb::encrypt(&aes_192_key, &plaintext).unwrap();
         let challenge_aes_256_ecb_ciphertext = AesEcb::encrypt(&aes_256_key, &plaintext).unwrap();
         assert_eq!(
-            aes_128_ciphertext,
+            aes_128_ecb_ciphertext,
             hex::encode(&challenge_aes_128_ecb_ciphertext)
         );
         assert_eq!(
-            aes_192_ciphertext,
+            aes_192_ecb_ciphertext,
             hex::encode(&challenge_aes_192_ecb_ciphertext)
         );
         assert_eq!(
-            aes_256_ciphertext,
+            aes_256_ecb_ciphertext,
             hex::encode(&challenge_aes_256_ecb_ciphertext)
         );
         let challenge_aes_128_ecb_plaintext =
