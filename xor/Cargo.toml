@@ -1,0 +1,11 @@
+[package]
+name = "xor"
+version = "0.1.0"
+authors = ["Andrew Bennett <andrew.bennett@toyotaconnected.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+quickcheck = "0.9.0"
+quickcheck_macros = "0.8.0"
