@@ -81,15 +81,11 @@ mod tests {
     fn prop_exor_twice_is_identity(xs: Vec<u8>, ys: Vec<u8>) -> TestResult {
         let xlen = xs.len();
         let ylen = ys.len();
-        let test = move || {
-            test_exor_twice_is_identity(xs, ys)
-                .map_err(|_| false)
-                .unwrap()
-        };
+        let test = test_exor_twice_is_identity(xs, ys);
         if xlen != ylen {
-            TestResult::must_fail(test)
+            TestResult::must_fail(move || test.unwrap())
         } else {
-            TestResult::from_bool(test())
+            TestResult::from_bool(test.unwrap())
         }
     }
 
