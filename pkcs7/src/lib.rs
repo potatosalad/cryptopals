@@ -141,6 +141,28 @@ impl<U: ?Sized + AsMut<Vec<u8>>> Pkcs7Mut for U {
     }
 }
 
+pub fn pad<I: std::iter::FromIterator<u8>, U: ?Sized + AsRef<[u8]>>(
+    input: &U,
+    block_size: u8,
+) -> PadResult<I> {
+    input.pkcs7_pad(block_size)
+}
+
+pub fn pad_mut<U: ?Sized + AsMut<Vec<u8>>>(input: &mut U, block_size: u8) -> PadResult<()> {
+    input.pkcs7_pad_mut(block_size)
+}
+
+pub fn unpad<I: std::iter::FromIterator<u8>, U: ?Sized + AsRef<[u8]>>(
+    input: &U,
+    block_size: u8,
+) -> UnpadResult<I> {
+    input.pkcs7_unpad(block_size)
+}
+
+pub fn unpad_mut<U: ?Sized + AsMut<Vec<u8>>>(input: &mut U, block_size: u8) -> UnpadResult<()> {
+    input.pkcs7_unpad_mut(block_size)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Pkcs7, Pkcs7Mut};

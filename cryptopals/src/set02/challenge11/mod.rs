@@ -1,9 +1,10 @@
 use rand::prelude::*;
 
-pub use crate::set02::challenge09::{pkcs7_pad, pkcs7_unpad, Pkcs7Error};
-pub use crate::set02::challenge10::{
-    AesCbcCipher, AesCbcInitializationVector, AesEcbCipher, AesError, AesKey,
-};
+pub use aes::cbc::{AesCbcCipher, AesCbcIv};
+pub use aes::ecb::{AesEcbBlockCipher, AesEcbCipher};
+pub use aes::error::AesError;
+pub use aes::key::AesKey;
+pub use pkcs7;
 
 pub fn random_aes_128_key() -> AesKey {
     let mut csprng = thread_rng();
@@ -26,11 +27,11 @@ pub fn random_aes_256_key() -> AesKey {
     AesKey::aes_256_key(key)
 }
 
-pub fn random_aes_cbc_iv() -> AesCbcInitializationVector {
+pub fn random_aes_cbc_iv() -> AesCbcIv {
     let mut csprng = thread_rng();
     let mut iv: [u8; 16] = [0u8; 16];
     csprng.fill_bytes(&mut iv);
-    AesCbcInitializationVector::aes_cbc_iv(iv)
+    AesCbcIv::aes_cbc_iv(iv)
 }
 
 pub fn aes_128_ecb_encrypt_random<T: ?Sized + AsRef<[u8]>>(
@@ -113,14 +114,14 @@ pub fn encryption_oracle<T: ?Sized + AsRef<[u8]>>(input: &T) -> Result<OracleHin
     let mut body: Vec<u8> = input.as_ref().to_vec();
     head.append(&mut body);
     head.append(&mut tail);
-    let plaintext = pkcs7_pad(&head, 16);
+    pkcs7::pad_mut(&mut head, 16).unwrap();
     if csprng.gen() {
-        aes_128_ecb_encrypt_random(&plaintext).map(|ciphertext| OracleHint {
+        aes_128_ecb_encrypt_random(&head).map(|ciphertext| OracleHint {
             aes_ecb_mode: true,
             ciphertext,
         })
     } else {
-        aes_128_cbc_encrypt_random(&plaintext).map(|ciphertext| OracleHint {
+        aes_128_cbc_encrypt_random(&head).map(|ciphertext| OracleHint {
             aes_ecb_mode: false,
             ciphertext,
         })

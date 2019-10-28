@@ -24,6 +24,14 @@ impl<U: ?Sized + AsMut<[u8]>> SingleByteXorMut for U {
     }
 }
 
+pub fn sxor<I: std::iter::FromIterator<u8>, A: ?Sized + AsRef<[u8]>>(a: &A, b: u8) -> I {
+    a.sxor(b)
+}
+
+pub fn sxor_mut<A: ?Sized + AsMut<[u8]>>(a: &mut A, b: u8) {
+    a.sxor_mut(b);
+}
+
 #[cfg(test)]
 mod tests {
     use super::{SingleByteXor, SingleByteXorMut};

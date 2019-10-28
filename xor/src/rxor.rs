@@ -40,6 +40,17 @@ impl<T: Sized + AsRef<[u8]>, U: ?Sized + AsMut<[u8]>> RepeatingKeyXorMut<T> for 
     }
 }
 
+pub fn rxor<I: std::iter::FromIterator<u8>, A: ?Sized + AsRef<[u8]>, B: ?Sized + AsRef<[u8]>>(
+    a: &A,
+    b: &B,
+) -> I {
+    a.rxor(&b)
+}
+
+pub fn rxor_mut<A: ?Sized + AsMut<[u8]>, B: ?Sized + AsRef<[u8]>>(a: &mut A, b: &B) {
+    a.rxor_mut(&b);
+}
+
 #[cfg(test)]
 mod tests {
     use super::{RepeatingKeyXor, RepeatingKeyXorMut};

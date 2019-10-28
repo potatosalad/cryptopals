@@ -1,20 +1,11 @@
 [package]
-name = "cryptopals"
+name = "aes"
 version = "0.1.0"
 authors = ["Andrew Bennett <andrew.bennett@toyotaconnected.com>"]
 edition = "2018"
-publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# aes = "0.3.2"
-base64 = "0.11.0"
-hex = "0.4.0"
-lazy_static = "1.4.0"
-rand = "0.7.2"
-quickcheck = "0.9.0"
-quickcheck_macros = "0.8.0"
-aes = { path = "../aes" }
-pkcs7 = { path = "../pkcs7" }
+aesimpl = { version = "0.3.2", package = "aes" }
 xor = { path = "../xor" }

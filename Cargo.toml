@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "aes",
     "cryptopals",
     "pkcs7",
     "xor",

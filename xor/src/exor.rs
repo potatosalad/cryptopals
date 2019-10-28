@@ -52,6 +52,20 @@ impl<T: Sized + AsRef<[u8]>, U: ?Sized + AsMut<[u8]>> ExclusiveFixedXorMut<T> fo
     }
 }
 
+pub fn exor<I: std::iter::FromIterator<u8>, A: ?Sized + AsRef<[u8]>, B: ?Sized + AsRef<[u8]>>(
+    a: &A,
+    b: &B,
+) -> crate::Result<I> {
+    a.exor(&b)
+}
+
+pub fn exor_mut<A: ?Sized + AsMut<[u8]>, B: ?Sized + AsRef<[u8]>>(
+    a: &mut A,
+    b: &B,
+) -> crate::Result<()> {
+    a.exor_mut(&b)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{ExclusiveFixedXor, ExclusiveFixedXorMut};
