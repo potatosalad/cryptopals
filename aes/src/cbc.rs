@@ -1,3 +1,4 @@
+use rand::prelude::*;
 use xor::exor::{exor, exor_mut};
 
 use crate::ecb::AesEcbBlockCipher;
@@ -24,6 +25,12 @@ impl AesCbcIv {
                 explanation: "must be 16 bytes",
             }),
         }
+    }
+}
+
+impl Distribution<AesCbcIv> for rand::distributions::Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> AesCbcIv {
+        AesCbcIv(rng.gen())
     }
 }
 

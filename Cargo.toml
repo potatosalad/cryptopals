@@ -3,6 +3,7 @@
 members = [
     "aes",
     "cryptopals",
+    "oracles",
     "pkcs7",
     "xor",
 ]

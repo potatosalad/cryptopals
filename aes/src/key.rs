@@ -1,4 +1,4 @@
-// use std::convert::TryInto;
+use rand::prelude::*;
 
 use crate::error::AesError;
 
@@ -40,6 +40,16 @@ impl AesKey {
                 Ok(Self::aes_256_key(key))
             }
             x => Err(AesError::InvalidKeySize(x)),
+        }
+    }
+}
+
+impl Distribution<AesKey> for rand::distributions::Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> AesKey {
+        match rng.gen_range(0, 3) {
+            0 => AesKey::Aes128Key(rng.gen()),
+            1 => AesKey::Aes192Key(rng.gen()),
+            _ => AesKey::Aes256Key(rng.gen()),
         }
     }
 }
