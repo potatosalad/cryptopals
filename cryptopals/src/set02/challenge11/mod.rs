@@ -9,8 +9,8 @@ pub struct Oracle {
     context: EncryptionContext,
 }
 
-impl Oracle {
-    pub fn random() -> Self {
+impl Default for Oracle {
+    fn default() -> Self {
         let mut csprng = thread_rng();
         let encryption_algorithm = if csprng.gen() {
             EncryptionAlgorithm::AesCbc
@@ -49,7 +49,7 @@ mod tests {
     #[test]
     fn encryption_oracle_sanity_check() {
         let plaintext = vec![0u8; 16 * 3];
-        let oracle = Oracle::random();
+        let oracle = Oracle::default();
         let ciphertext: Vec<u8> = oracle.encrypt(&plaintext).unwrap();
         if detect_aes_ecb_mode(&ciphertext, 1) {
             assert_eq!(
@@ -67,7 +67,7 @@ mod tests {
     #[quickcheck]
     fn encryption_oracle_detects_aes_ecb_mode(x: usize) -> bool {
         let plaintext = vec![0u8; 16 * (3 + x)];
-        let oracle = Oracle::random();
+        let oracle = Oracle::default();
         let ciphertext: Vec<u8> = oracle.encrypt(&plaintext).unwrap();
         if detect_aes_ecb_mode(&ciphertext, 1) {
             EncryptionAlgorithm::AesEcb == oracle.context.encryption_algorithm

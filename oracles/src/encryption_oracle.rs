@@ -11,6 +11,10 @@ pub trait EncryptionOracle {
         &self,
         _: &T,
     ) -> EncryptionResult<I>;
+
+    fn encrypt_as_vec<T: ?Sized + AsRef<[u8]>>(&self, input: &T) -> EncryptionResult<Vec<u8>> {
+        self.encrypt(input)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -73,29 +77,24 @@ impl EncryptionContext {
         encryption_algorithm: EncryptionAlgorithm,
         padding_algorithm: PaddingAlgorithm,
     ) -> Self {
-        let mut csprng = thread_rng();
-        let key = match &encryption_algorithm {
-            EncryptionAlgorithm::AesCbc | EncryptionAlgorithm::AesEcb => {
-                match csprng.gen_range(0, 3) {
-                    0 => {
-                        let mut key = vec![0_u8; 16];
-                        csprng.fill_bytes(&mut key);
-                        key
-                    }
-                    1 => {
-                        let mut key = vec![0_u8; 24];
-                        csprng.fill_bytes(&mut key);
-                        key
-                    }
-                    _ => {
-                        let mut key = vec![0_u8; 32];
-                        csprng.fill_bytes(&mut key);
-                        key
-                    }
-                }
-            }
-        };
+        let key = Self::generate_key(&encryption_algorithm);
         Self::static_key(key.as_slice(), encryption_algorithm, padding_algorithm)
+    }
+
+    pub fn static_content(
+        prefix: &[u8],
+        suffix: &[u8],
+        encryption_algorithm: EncryptionAlgorithm,
+        padding_algorithm: PaddingAlgorithm,
+    ) -> Self {
+        let key = Self::generate_key(&encryption_algorithm);
+        Self::new(
+            key.as_slice(),
+            prefix,
+            suffix,
+            encryption_algorithm,
+            padding_algorithm,
+        )
     }
 
     pub fn static_key(
@@ -115,6 +114,31 @@ impl EncryptionContext {
             encryption_algorithm,
             padding_algorithm,
         )
+    }
+
+    fn generate_key(encryption_algorithm: &EncryptionAlgorithm) -> Vec<u8> {
+        let mut csprng = thread_rng();
+        match encryption_algorithm {
+            EncryptionAlgorithm::AesCbc | EncryptionAlgorithm::AesEcb => {
+                match csprng.gen_range(0, 3) {
+                    0 => {
+                        let mut key = vec![0_u8; 16];
+                        csprng.fill_bytes(&mut key);
+                        key
+                    }
+                    1 => {
+                        let mut key = vec![0_u8; 24];
+                        csprng.fill_bytes(&mut key);
+                        key
+                    }
+                    _ => {
+                        let mut key = vec![0_u8; 32];
+                        csprng.fill_bytes(&mut key);
+                        key
+                    }
+                }
+            }
+        }
     }
 
     pub fn block_size(&self) -> Option<u8> {

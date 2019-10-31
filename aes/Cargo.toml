@@ -9,4 +9,6 @@ edition = "2018"
 [dependencies]
 aesimpl = { version = "0.3.2", package = "aes" }
 xor = { path = "../xor" }
+quickcheck = "0.9.0"
+quickcheck_macros = "0.8.0"
 rand = "0.7.2"

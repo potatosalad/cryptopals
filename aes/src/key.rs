@@ -1,7 +1,9 @@
+use quickcheck::{single_shrinker, Arbitrary, Gen};
 use rand::prelude::*;
 
 use crate::error::AesError;
 
+#[derive(Clone, Debug)]
 pub enum AesKey {
     Aes128Key([u8; 16]),
     Aes192Key([u8; 24]),
@@ -42,6 +44,14 @@ impl AesKey {
             x => Err(AesError::InvalidKeySize(x)),
         }
     }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        match self {
+            AesKey::Aes128Key(ref key) => key.to_vec(),
+            AesKey::Aes192Key(ref key) => key.to_vec(),
+            AesKey::Aes256Key(ref key) => key.to_vec(),
+        }
+    }
 }
 
 impl Distribution<AesKey> for rand::distributions::Standard {
@@ -50,6 +60,20 @@ impl Distribution<AesKey> for rand::distributions::Standard {
             0 => AesKey::Aes128Key(rng.gen()),
             1 => AesKey::Aes192Key(rng.gen()),
             _ => AesKey::Aes256Key(rng.gen()),
+        }
+    }
+}
+
+impl Arbitrary for AesKey {
+    fn arbitrary<G: Gen>(g: &mut G) -> AesKey {
+        g.gen()
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = AesKey>> {
+        match self {
+            AesKey::Aes128Key(_) => single_shrinker(AesKey::Aes128Key([0_u8; 16])),
+            AesKey::Aes192Key(_) => single_shrinker(AesKey::Aes192Key([0_u8; 24])),
+            AesKey::Aes256Key(_) => single_shrinker(AesKey::Aes256Key([0_u8; 32])),
         }
     }
 }
