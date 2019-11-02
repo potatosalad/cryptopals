@@ -7,7 +7,7 @@ pub use oracles::encryption_oracle::{
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Oracle {
-    context: EncryptionContext,
+    pub(crate) context: EncryptionContext,
 }
 
 impl DeterministicEncryptionOracle for Oracle {}
