@@ -14,6 +14,8 @@ extern crate quickcheck;
 #[cfg(test)]
 #[macro_use(quickcheck)]
 extern crate quickcheck_macros;
+// #[macro_use]
+extern crate serde;
 
 pub mod set01;
 pub mod set02;

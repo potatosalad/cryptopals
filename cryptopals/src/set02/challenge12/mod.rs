@@ -10,6 +10,8 @@ pub struct Oracle {
     context: EncryptionContext,
 }
 
+impl DeterministicEncryptionOracle for Oracle {}
+
 impl Default for Oracle {
     fn default() -> Self {
         let prefix: Vec<u8> = vec![];
@@ -47,21 +49,21 @@ impl Oracle {
         }
     }
 
-    pub fn detect_block_size(&self) -> EncryptionResult<usize> {
+    pub fn detect_block_size(&self, byte: u8) -> EncryptionResult<usize> {
         let mut input: Vec<u8> = Vec::new();
         let alen = self.encrypt_as_vec(&input)?.len();
         let mut blen = alen;
         while alen == blen {
-            input.push(0);
+            input.push(byte);
             blen = self.encrypt_as_vec(&input)?.len();
         }
         Ok(blen - alen)
     }
 
-    pub fn detect_uses_aes_ecb_mode(&self, block_size: usize) -> EncryptionResult<bool> {
-        let input: Vec<u8> = vec![0_u8; block_size * 3];
+    pub fn detect_uses_aes_ecb_mode(&self, block_size: usize, byte: u8) -> EncryptionResult<bool> {
+        let input: Vec<u8> = vec![byte; block_size * 3];
         let ciphertext: Vec<u8> = self.encrypt(&input)?;
-        let prefix_blocks = self.count_prefix_blocks(block_size)?;
+        let prefix_blocks = self.count_prefix_blocks(block_size, 0, 1)?;
         let blocks: Vec<&[u8]> = ciphertext
             .chunks(16)
             .skip(prefix_blocks + 1)
@@ -70,17 +72,22 @@ impl Oracle {
         Ok(blocks[0] == blocks[1])
     }
 
-    pub fn detect_uses_padding(&self, block_size: usize) -> EncryptionResult<bool> {
-        let alen = self.encrypt_as_vec(&[0])?.len();
+    pub fn detect_uses_padding(&self, block_size: usize, byte: u8) -> EncryptionResult<bool> {
+        let alen = self.encrypt_as_vec(&[byte])?.len();
         let blen = self.encrypt_as_vec(&[])?.len();
         Ok((alen - blen) % block_size == 0)
     }
 
-    pub fn count_prefix_blocks(&self, block_size: usize) -> EncryptionResult<usize> {
+    pub fn count_prefix_blocks(
+        &self,
+        block_size: usize,
+        byte0: u8,
+        byte1: u8,
+    ) -> EncryptionResult<usize> {
         Ok(self
-            .encrypt_as_vec(&[0])?
+            .encrypt_as_vec(&[byte0])?
             .chunks(block_size)
-            .zip(self.encrypt_as_vec(&[1])?.chunks(block_size))
+            .zip(self.encrypt_as_vec(&[byte1])?.chunks(block_size))
             .position(|(a, b)| a != b)
             .expect("oracle produced same output for different input (broken oracle)"))
     }
@@ -110,22 +117,25 @@ impl Oracle {
         &self,
         block_size: usize,
         prefix_blocks: usize,
+        byte0: u8,
+        byte1: u8,
     ) -> EncryptionResult<usize> {
         let byte_offset = prefix_blocks * block_size;
-        let prefix_offset0 = self.detect_prefix_offset(block_size, byte_offset, 0_u8)?;
-        let prefix_offset1 = self.detect_prefix_offset(block_size, byte_offset, 1_u8)?;
+        let prefix_offset0 = self.detect_prefix_offset(block_size, byte_offset, byte0)?;
+        let prefix_offset1 = self.detect_prefix_offset(block_size, byte_offset, byte1)?;
         Ok(byte_offset + std::cmp::min(prefix_offset0, prefix_offset1))
     }
 
     pub fn detect_prefix_size_plus_suffix_size(
         &self,
         block_size: usize,
+        byte: u8,
     ) -> EncryptionResult<usize> {
         let alen = self.encrypt_as_vec(&[])?.len();
-        if !self.detect_uses_padding(block_size)? || alen == 0 {
+        if !self.detect_uses_padding(block_size, byte)? || alen == 0 {
             return Ok(alen);
         }
-        let block = vec![0_u8; block_size];
+        let block = vec![byte; block_size];
         for position in 1..=block_size {
             let blen = self.encrypt_as_vec(&block[..position])?.len();
             if alen != blen {
@@ -138,10 +148,13 @@ impl Oracle {
     pub fn detect_prefix_size_and_suffix_size(
         &self,
         block_size: usize,
+        byte0: u8,
+        byte1: u8,
     ) -> EncryptionResult<(usize, usize)> {
-        let prefix_blocks = self.count_prefix_blocks(block_size)?;
-        let prefix_size = self.detect_prefix_size(block_size, prefix_blocks)?;
-        let suffix_size = self.detect_prefix_size_plus_suffix_size(block_size)? - prefix_size;
+        let prefix_blocks = self.count_prefix_blocks(block_size, byte0, byte1)?;
+        let prefix_size = self.detect_prefix_size(block_size, prefix_blocks, byte0, byte1)?;
+        let suffix_size =
+            self.detect_prefix_size_plus_suffix_size(block_size, byte0)? - prefix_size;
         Ok((prefix_size, suffix_size))
     }
 
@@ -203,17 +216,20 @@ mod tests {
         let prefix_blocks = 0_usize;
         let prefix_size = 0_usize;
         let suffix_size = 138_usize;
-        assert_eq!(block_size, oracle.detect_block_size().unwrap());
-        assert_eq!(true, oracle.detect_uses_aes_ecb_mode(block_size).unwrap());
-        assert_eq!(true, oracle.detect_uses_padding(block_size).unwrap());
+        assert_eq!(block_size, oracle.detect_block_size(0_u8).unwrap());
+        assert_eq!(
+            true,
+            oracle.detect_uses_aes_ecb_mode(block_size, 0_u8).unwrap()
+        );
+        assert_eq!(true, oracle.detect_uses_padding(block_size, 0_u8).unwrap());
         assert_eq!(
             prefix_blocks,
-            oracle.count_prefix_blocks(block_size).unwrap()
+            oracle.count_prefix_blocks(block_size, 0, 1).unwrap()
         );
         assert_eq!(
             (prefix_size, suffix_size),
             oracle
-                .detect_prefix_size_and_suffix_size(block_size)
+                .detect_prefix_size_and_suffix_size(block_size, 0_u8, 1_u8)
                 .unwrap()
         );
         assert_eq!(
@@ -236,9 +252,9 @@ mod tests {
             prefix.as_slice(),
             suffix.as_slice(),
         );
-        let block_size = oracle.detect_block_size().unwrap();
+        let block_size = oracle.detect_block_size(0_u8).unwrap();
         let (prefix_size, suffix_size) = oracle
-            .detect_prefix_size_and_suffix_size(block_size)
+            .detect_prefix_size_and_suffix_size(block_size, 0_u8, 1_u8)
             .unwrap();
         let result = oracle.context.suffix
             == oracle
