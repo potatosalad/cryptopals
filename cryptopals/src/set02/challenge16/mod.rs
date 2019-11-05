@@ -154,7 +154,7 @@ impl Oracle {
         }
         let mut plaintext: Vec<u8> = aes::cbc::decrypt(&self.key, &self.iv, ciphertext)?;
         pkcs7::unpad_mut(&mut plaintext, block_size as u8)?;
-        plaintext.retain(is_valid_cookiechar);
+        plaintext.retain(|&c| is_valid_cookiechar(c));
         let encoded = String::from_utf8(plaintext)?;
         let cookies: Vec<(String, String)> = decode_cookiestring(encoded.as_str())?;
         Ok(cookies)
@@ -186,8 +186,8 @@ impl Oracle {
     }
 }
 
-pub fn is_valid_cookiechar(c: &u8) -> bool {
-    match *c {
+pub fn is_valid_cookiechar(c: u8) -> bool {
+    match c {
         b'=' | b';' | b'%' | b'!' | b'(' | b')' | b'*' | b'+' | b'-' | b'.' | b'_' | b'~' => true,
         _ => c.is_ascii_alphanumeric(),
     }
