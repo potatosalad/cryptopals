@@ -1,3 +1,4 @@
+use quickcheck::{single_shrinker, Arbitrary, Gen};
 use rand::prelude::*;
 use xor::exor::{exor, exor_mut};
 
@@ -5,6 +6,7 @@ use crate::ecb::AesEcbBlockCipher;
 use crate::error::AesError;
 use crate::key::AesKey;
 
+#[derive(Clone, Debug)]
 pub struct AesCbcIv([u8; 16]);
 
 impl AesCbcIv {
@@ -26,11 +28,29 @@ impl AesCbcIv {
             }),
         }
     }
+
+    pub fn as_slice(&self) -> &[u8] {
+        &self.0
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
 }
 
 impl Distribution<AesCbcIv> for rand::distributions::Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> AesCbcIv {
         AesCbcIv(rng.gen())
+    }
+}
+
+impl Arbitrary for AesCbcIv {
+    fn arbitrary<G: Gen>(g: &mut G) -> AesCbcIv {
+        g.gen()
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = AesCbcIv>> {
+        single_shrinker(AesCbcIv([0_u8; 16]))
     }
 }
 

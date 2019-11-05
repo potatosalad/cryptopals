@@ -50,6 +50,7 @@ impl PaddingAlgorithm {
 #[derive(Clone, Debug, PartialEq)]
 pub struct EncryptionContext {
     pub key: Vec<u8>,
+    pub iv: Option<Vec<u8>>,
     pub prefix: Vec<u8>,
     pub suffix: Vec<u8>,
     pub encryption_algorithm: EncryptionAlgorithm,
@@ -66,6 +67,7 @@ impl EncryptionContext {
     ) -> Self {
         Self {
             key: key.to_vec(),
+            iv: None,
             prefix: prefix.to_vec(),
             suffix: suffix.to_vec(),
             encryption_algorithm,
@@ -190,9 +192,15 @@ impl EncryptionOracle for EncryptionContext {
 
         match self.encryption_algorithm {
             EncryptionAlgorithm::AesCbc => {
-                let mut csprng = thread_rng();
-                let mut iv: [u8; 16] = [0_u8; 16];
-                csprng.fill_bytes(&mut iv);
+                let iv = if let Some(iv) = self.iv.as_ref() {
+                    // println!("about to encrypt: {:?}", String::from_utf8(plaintext.clone()));
+                    iv.to_vec()
+                } else {
+                    let mut csprng = thread_rng();
+                    let mut iv: Vec<u8> = vec![0_u8; 16];
+                    csprng.fill_bytes(&mut iv);
+                    iv
+                };
                 let ciphertext = aes_cbc_encrypt(&self.key, &iv, &plaintext)?;
                 Ok(ciphertext.into_iter().collect())
             }

@@ -46,7 +46,7 @@ impl Oracle {
 
     pub fn detect_uses_aes_ecb_mode(&self, block_size: usize) -> EncryptionResult<bool> {
         self.as_challenge12_oracle()
-            .detect_uses_aes_ecb_mode(block_size, b'x')
+            .detect_uses_aes_ecb_mode(block_size, b'x', b'y')
     }
 
     pub fn detect_uses_padding(&self, block_size: usize) -> EncryptionResult<bool> {

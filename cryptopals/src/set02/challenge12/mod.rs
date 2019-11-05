@@ -60,10 +60,15 @@ impl Oracle {
         Ok(blen - alen)
     }
 
-    pub fn detect_uses_aes_ecb_mode(&self, block_size: usize, byte: u8) -> EncryptionResult<bool> {
-        let input: Vec<u8> = vec![byte; block_size * 3];
+    pub fn detect_uses_aes_ecb_mode(
+        &self,
+        block_size: usize,
+        byte0: u8,
+        byte1: u8,
+    ) -> EncryptionResult<bool> {
+        let input: Vec<u8> = vec![byte0; block_size * 3];
         let ciphertext: Vec<u8> = self.encrypt(&input)?;
-        let prefix_blocks = self.count_prefix_blocks(block_size, 0, 1)?;
+        let prefix_blocks = self.count_prefix_blocks(block_size, byte0, byte1)?;
         let blocks: Vec<&[u8]> = ciphertext
             .chunks(16)
             .skip(prefix_blocks + 1)
@@ -219,7 +224,9 @@ mod tests {
         assert_eq!(block_size, oracle.detect_block_size(0_u8).unwrap());
         assert_eq!(
             true,
-            oracle.detect_uses_aes_ecb_mode(block_size, 0_u8).unwrap()
+            oracle
+                .detect_uses_aes_ecb_mode(block_size, 0_u8, 1_u8)
+                .unwrap()
         );
         assert_eq!(true, oracle.detect_uses_padding(block_size, 0_u8).unwrap());
         assert_eq!(

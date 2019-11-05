@@ -45,6 +45,14 @@ impl AesKey {
         }
     }
 
+    pub fn as_slice(&self) -> &[u8] {
+        match self {
+            AesKey::Aes128Key(key) => key,
+            AesKey::Aes192Key(key) => key,
+            AesKey::Aes256Key(key) => key,
+        }
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         match self {
             AesKey::Aes128Key(ref key) => key.to_vec(),
