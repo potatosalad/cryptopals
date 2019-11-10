@@ -12,6 +12,7 @@ mod tests {
         };
     }
 
+    #[ignore]
     #[test]
     fn break_fixed_nonce_ctr_mode_statistically() {
         use rand::prelude::*;
@@ -28,6 +29,7 @@ mod tests {
         assert_eq!(solver.plaintexts, decrypted);
     }
 
+    #[ignore]
     #[test]
     fn break_fixed_nonce_ctr_mode_statistically_nist_sp800_38a() {
         use rand::prelude::*;

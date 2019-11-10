@@ -130,6 +130,7 @@ mod tests {
         };
     }
 
+    #[ignore]
     #[test]
     fn break_fixed_nonce_ctr_mode_using_substitutions() {
         use rand::prelude::*;
@@ -146,6 +147,7 @@ mod tests {
         assert_eq!(solver.plaintexts, decrypted);
     }
 
+    #[ignore]
     #[test]
     fn break_fixed_nonce_ctr_mode_using_substitutions_nist_sp800_38a() {
         use rand::prelude::*;
