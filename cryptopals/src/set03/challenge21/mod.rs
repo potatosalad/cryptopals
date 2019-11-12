@@ -2,6 +2,8 @@
 pub enum MersenneTwisterError {
     InvalidCoefficients,
     InvalidSeed,
+    InvalidState,
+    InvalidIndex,
 }
 
 // This is important for other errors to wrap this one.
@@ -19,6 +21,8 @@ impl std::fmt::Display for MersenneTwisterError {
                 write!(f, "invalid mersenne twister coefficients")
             }
             MersenneTwisterError::InvalidSeed => write!(f, "invalid mersenne twister seed"),
+            MersenneTwisterError::InvalidState => write!(f, "invalid mersenne twister state"),
+            MersenneTwisterError::InvalidIndex => write!(f, "invalid mersenne twister index"),
         }
     }
 }
@@ -94,6 +98,62 @@ pub const MT19937_64_COEFFICIENTS: MersenneTwisterCoefficients<u64> = MersenneTw
     f: 0x5851_F42D_4C95_7F2D,
 };
 
+fn inverse_bitshift_right_xor_u32(y: u32, shift: u32, width: u32) -> u32 {
+    let mut i = 0;
+    let mut y = y;
+    let mut r = 0;
+    while i * shift < width {
+        let part_mask = (!0 << (width - shift)) >> (shift * i);
+        let part = y & part_mask;
+        y ^= part >> shift;
+        r |= part;
+        i += 1;
+    }
+    r
+}
+
+fn inverse_bitshift_left_xor_u32(y: u32, shift: u32, width: u32, mask: u32) -> u32 {
+    let mut i = 0;
+    let mut y = y;
+    let mut r = 0;
+    while i * shift < width {
+        let part_mask = (!0 >> (width - shift)) << (shift * i);
+        let part = y & part_mask;
+        y ^= (part << shift) & mask;
+        r |= part;
+        i += 1;
+    }
+    r
+}
+
+fn inverse_bitshift_right_xor_u64(y: u64, shift: u64, width: u64) -> u64 {
+    let mut i = 0;
+    let mut y = y;
+    let mut r = 0;
+    while i * shift < width {
+        let part_mask = (!0 << (width - shift)) >> (shift * i);
+        let part = y & part_mask;
+        y ^= part >> shift;
+        r |= part;
+        i += 1;
+    }
+    r
+}
+
+fn inverse_bitshift_left_xor_u64(y: u64, shift: u64, width: u64, mask: u64) -> u64 {
+    let mut i = 0;
+    let mut y = y;
+    let mut r = 0;
+    while i * shift < width {
+        let part_mask = (!0 >> (width - shift)) << (shift * i);
+        let part = y & part_mask;
+        y ^= (part << shift) & mask;
+        r |= part;
+        i += 1;
+    }
+    r
+}
+
 #[derive(Clone, Debug)]
 pub struct MersenneTwister<'co, T> {
     co: &'co MersenneTwisterCoefficients<T>,
@@ -105,11 +165,18 @@ pub struct MersenneTwister<'co, T> {
 }
 
 impl<'co> MersenneTwister<'co, u32> {
-    pub fn init(
+    pub fn from_state(
         co: &'co MersenneTwisterCoefficients<u32>,
-        seed: u32,
+        state: Vec<u32>,
+        index: usize,
     ) -> Result<Self, MersenneTwisterError> {
         co.validate()?;
+        if state.len() != co.n {
+            return Err(MersenneTwisterError::InvalidState);
+        }
+        if index > co.n + 1 {
+            return Err(MersenneTwisterError::InvalidIndex);
+        }
         let inner_mask: u32 = if co.w == 32 {
             !0
         } else {
@@ -121,14 +188,21 @@ impl<'co> MersenneTwister<'co, u32> {
             (1 << (co.r as u32)) - 1
         };
         let upper_mask: u32 = (!lower_mask) & inner_mask;
-        let mut mt = MersenneTwister {
+        Ok(MersenneTwister {
             co,
             inner_mask,
             lower_mask,
             upper_mask,
-            mt: vec![0; co.n],
-            index: co.n + 1,
-        };
+            mt: state,
+            index,
+        })
+    }
+
+    pub fn init(
+        co: &'co MersenneTwisterCoefficients<u32>,
+        seed: u32,
+    ) -> Result<Self, MersenneTwisterError> {
+        let mut mt = Self::from_state(co, vec![0; co.n], co.n + 1)?;
         mt.reseed(seed);
         Ok(mt)
     }
@@ -155,13 +229,9 @@ impl<'co> MersenneTwister<'co, u32> {
             }
             self.twist();
         }
-        let mut y = self.mt[self.index];
-        y ^= (y >> self.co.u as u32) & self.co.d;
-        y ^= (y << self.co.s as u32) & self.co.b;
-        y ^= (y << self.co.t as u32) & self.co.c;
-        y ^= y >> self.co.l as u32;
+        let y = self.temper(self.mt[self.index]);
         self.index += 1;
-        Ok(y & self.inner_mask)
+        Ok(y)
     }
 
     // Generate the next n values from the series x_i
@@ -178,14 +248,37 @@ impl<'co> MersenneTwister<'co, u32> {
         }
         self.index = 0;
     }
+
+    pub fn temper(&self, mut y: u32) -> u32 {
+        y ^= (y >> self.co.u as u32) & self.co.d;
+        y ^= (y << self.co.s as u32) & self.co.b;
+        y ^= (y << self.co.t as u32) & self.co.c;
+        y ^= y >> self.co.l as u32;
+        y & self.inner_mask
+    }
+
+    pub fn untemper(&self, mut y: u32) -> u32 {
+        y = inverse_bitshift_right_xor_u32(y, self.co.l as u32, self.co.w as u32);
+        y = inverse_bitshift_left_xor_u32(y, self.co.t as u32, self.co.w as u32, self.co.c);
+        y = inverse_bitshift_left_xor_u32(y, self.co.s as u32, self.co.w as u32, self.co.b);
+        y = inverse_bitshift_right_xor_u32(y, self.co.u as u32, self.co.w as u32);
+        y
+    }
 }
 
 impl<'co> MersenneTwister<'co, u64> {
-    pub fn init(
+    pub fn from_state(
         co: &'co MersenneTwisterCoefficients<u64>,
-        seed: u64,
+        state: Vec<u64>,
+        index: usize,
     ) -> Result<Self, MersenneTwisterError> {
         co.validate()?;
+        if state.len() != co.n {
+            return Err(MersenneTwisterError::InvalidState);
+        }
+        if index > co.n + 1 {
+            return Err(MersenneTwisterError::InvalidIndex);
+        }
         let inner_mask: u64 = if co.w == 64 {
             !0
         } else {
@@ -197,14 +290,21 @@ impl<'co> MersenneTwister<'co, u64> {
             (1 << (co.r as u64)) - 1
         };
         let upper_mask: u64 = (!lower_mask) & inner_mask;
-        let mut mt = MersenneTwister {
+        Ok(MersenneTwister {
             co,
             inner_mask,
             lower_mask,
             upper_mask,
-            mt: vec![0; co.n],
-            index: co.n + 1,
-        };
+            mt: state,
+            index,
+        })
+    }
+
+    pub fn init(
+        co: &'co MersenneTwisterCoefficients<u64>,
+        seed: u64,
+    ) -> Result<Self, MersenneTwisterError> {
+        let mut mt = Self::from_state(co, vec![0; co.n], co.n + 1)?;
         mt.reseed(seed);
         Ok(mt)
     }
@@ -231,13 +331,9 @@ impl<'co> MersenneTwister<'co, u64> {
             }
             self.twist();
         }
-        let mut y = self.mt[self.index];
-        y ^= (y >> self.co.u as u64) & self.co.d;
-        y ^= (y << self.co.s as u64) & self.co.b;
-        y ^= (y << self.co.t as u64) & self.co.c;
-        y ^= y >> self.co.l as u64;
+        let y = self.temper(self.mt[self.index]);
         self.index += 1;
-        Ok(y & self.inner_mask)
+        Ok(y)
     }
 
     // Generate the next n values from the series x_i
@@ -253,6 +349,22 @@ impl<'co> MersenneTwister<'co, u64> {
             self.mt[i] = self.mt[(i + self.co.m) % self.co.n] ^ xa;
         }
         self.index = 0;
+    }
+
+    pub fn temper(&self, mut y: u64) -> u64 {
+        y ^= (y >> self.co.u as u64) & self.co.d;
+        y ^= (y << self.co.s as u64) & self.co.b;
+        y ^= (y << self.co.t as u64) & self.co.c;
+        y ^= y >> self.co.l as u64;
+        y & self.inner_mask
+    }
+
+    pub fn untemper(&self, mut y: u64) -> u64 {
+        y = inverse_bitshift_right_xor_u64(y, self.co.l as u64, self.co.w as u64);
+        y = inverse_bitshift_left_xor_u64(y, self.co.t as u64, self.co.w as u64, self.co.c);
+        y = inverse_bitshift_left_xor_u64(y, self.co.s as u64, self.co.w as u64, self.co.b);
+        y = inverse_bitshift_right_xor_u64(y, self.co.u as u64, self.co.w as u64);
+        y
     }
 }
 
@@ -279,8 +391,21 @@ pub trait MersenneTwisterU32 {
 pub struct MersenneTwister19937(MersenneTwister<'static, u32>);
 
 impl MersenneTwister19937 {
+    pub fn from_state(state: Vec<u32>, index: usize) -> Result<Self, MersenneTwisterError> {
+        MersenneTwister::<'static, u32>::from_state(&MT19937_COEFFICIENTS, state, index)
+            .map(MersenneTwister19937)
+    }
+
     pub fn reseed(&mut self, seed: u32) {
         self.0.reseed(seed);
+    }
+
+    pub fn temper(&self, value: u32) -> u32 {
+        self.0.temper(value)
+    }
+
+    pub fn untemper(&self, value: u32) -> u32 {
+        self.0.untemper(value)
     }
 }
 
@@ -318,8 +443,21 @@ pub trait MersenneTwisterU64 {
 pub struct MersenneTwister19937_64(MersenneTwister<'static, u64>);
 
 impl MersenneTwister19937_64 {
+    pub fn from_state(state: Vec<u64>, index: usize) -> Result<Self, MersenneTwisterError> {
+        MersenneTwister::<'static, u64>::from_state(&MT19937_64_COEFFICIENTS, state, index)
+            .map(MersenneTwister19937_64)
+    }
+
     pub fn reseed(&mut self, seed: u64) {
         self.0.reseed(seed);
+    }
+
+    pub fn temper(&self, value: u64) -> u64 {
+        self.0.temper(value)
+    }
+
+    pub fn untemper(&self, value: u64) -> u64 {
+        self.0.untemper(value)
     }
 }
 
