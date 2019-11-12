@@ -121,21 +121,30 @@ impl<'co> MersenneTwister<'co, u32> {
             (1 << (co.r as u32)) - 1
         };
         let upper_mask: u32 = (!lower_mask) & inner_mask;
-        let mut mt: Vec<u32> = vec![0; co.n];
-        mt[0] = seed;
-        for i in 1..co.n {
-            mt[i] = (mt[i - 1] ^ (mt[i - 1] >> (co.w - 2)))
-                .wrapping_mul(co.f)
-                .wrapping_add(i as u32);
-        }
-        Ok(MersenneTwister {
+        let mut mt = MersenneTwister {
             co,
             inner_mask,
             lower_mask,
             upper_mask,
-            mt,
-            index: co.n,
-        })
+            mt: vec![0; co.n],
+            index: co.n + 1,
+        };
+        mt.reseed(seed);
+        Ok(mt)
+    }
+
+    pub fn reseed(&mut self, seed: u32) {
+        if self.index != self.co.n + 1 {
+            self.mt = vec![0; self.co.n];
+        }
+        let mt = &mut self.mt;
+        mt[0] = seed;
+        for i in 1..self.co.n {
+            mt[i] = (mt[i - 1] ^ (mt[i - 1] >> (self.co.w - 2)))
+                .wrapping_mul(self.co.f)
+                .wrapping_add(i as u32);
+        }
+        self.index = self.co.n;
     }
 
     // Extract a tempered value based on MT[index] calling twist() every n numbers
@@ -188,21 +197,30 @@ impl<'co> MersenneTwister<'co, u64> {
             (1 << (co.r as u64)) - 1
         };
         let upper_mask: u64 = (!lower_mask) & inner_mask;
-        let mut mt: Vec<u64> = vec![0; co.n];
-        mt[0] = seed;
-        for i in 1..co.n {
-            mt[i] = (mt[i - 1] ^ (mt[i - 1] >> (co.w - 2)))
-                .wrapping_mul(co.f)
-                .wrapping_add(i as u64);
-        }
-        Ok(MersenneTwister {
+        let mut mt = MersenneTwister {
             co,
             inner_mask,
             lower_mask,
             upper_mask,
-            mt,
-            index: co.n,
-        })
+            mt: vec![0; co.n],
+            index: co.n + 1,
+        };
+        mt.reseed(seed);
+        Ok(mt)
+    }
+
+    pub fn reseed(&mut self, seed: u64) {
+        if self.index != self.co.n + 1 {
+            self.mt = vec![0; self.co.n];
+        }
+        let mt = &mut self.mt;
+        mt[0] = seed;
+        for i in 1..self.co.n {
+            mt[i] = (mt[i - 1] ^ (mt[i - 1] >> (self.co.w - 2)))
+                .wrapping_mul(self.co.f)
+                .wrapping_add(i as u64);
+        }
+        self.index = self.co.n;
     }
 
     // Extract a tempered value based on MT[index] calling twist() every n numbers
@@ -257,7 +275,14 @@ pub trait MersenneTwisterU32 {
     fn generate(&mut self) -> u32;
 }
 
+#[derive(Clone, Debug)]
 pub struct MersenneTwister19937(MersenneTwister<'static, u32>);
+
+impl MersenneTwister19937 {
+    pub fn reseed(&mut self, seed: u32) {
+        self.0.reseed(seed);
+    }
+}
 
 impl MersenneTwisterU32 for MersenneTwister19937 {
     fn new(seed: u32) -> Self {
@@ -289,7 +314,14 @@ pub trait MersenneTwisterU64 {
     fn generate(&mut self) -> u64;
 }
 
+#[derive(Clone, Debug)]
 pub struct MersenneTwister19937_64(MersenneTwister<'static, u64>);
+
+impl MersenneTwister19937_64 {
+    pub fn reseed(&mut self, seed: u64) {
+        self.0.reseed(seed);
+    }
+}
 
 impl MersenneTwisterU64 for MersenneTwister19937_64 {
     fn new(seed: u64) -> Self {
