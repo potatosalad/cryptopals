@@ -1,4 +1,5 @@
 use aes::cbc::encrypt as aes_cbc_encrypt;
+use aes::ctr::encrypt as aes_ctr_encrypt;
 use aes::ecb::encrypt as aes_ecb_encrypt;
 use pkcs7;
 use rand::prelude::*;
@@ -20,6 +21,7 @@ pub trait EncryptionOracle {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum EncryptionAlgorithm {
     AesCbc,
+    AesCtr,
     AesEcb,
 }
 
@@ -27,6 +29,7 @@ impl EncryptionAlgorithm {
     pub fn block_size(&self) -> Option<u8> {
         match self {
             Self::AesCbc => Some(16_u8),
+            Self::AesCtr => None,
             Self::AesEcb => Some(16_u8),
         }
     }
@@ -121,25 +124,25 @@ impl EncryptionContext {
     fn generate_key(encryption_algorithm: &EncryptionAlgorithm) -> Vec<u8> {
         let mut csprng = thread_rng();
         match encryption_algorithm {
-            EncryptionAlgorithm::AesCbc | EncryptionAlgorithm::AesEcb => {
-                match csprng.gen_range(0, 3) {
-                    0 => {
-                        let mut key = vec![0_u8; 16];
-                        csprng.fill_bytes(&mut key);
-                        key
-                    }
-                    1 => {
-                        let mut key = vec![0_u8; 24];
-                        csprng.fill_bytes(&mut key);
-                        key
-                    }
-                    _ => {
-                        let mut key = vec![0_u8; 32];
-                        csprng.fill_bytes(&mut key);
-                        key
-                    }
+            EncryptionAlgorithm::AesCbc
+            | EncryptionAlgorithm::AesCtr
+            | EncryptionAlgorithm::AesEcb => match csprng.gen_range(0, 3) {
+                0 => {
+                    let mut key = vec![0_u8; 16];
+                    csprng.fill_bytes(&mut key);
+                    key
                 }
-            }
+                1 => {
+                    let mut key = vec![0_u8; 24];
+                    csprng.fill_bytes(&mut key);
+                    key
+                }
+                _ => {
+                    let mut key = vec![0_u8; 32];
+                    csprng.fill_bytes(&mut key);
+                    key
+                }
+            },
         }
     }
 
@@ -202,6 +205,19 @@ impl EncryptionOracle for EncryptionContext {
                     iv
                 };
                 let ciphertext = aes_cbc_encrypt(&self.key, &iv, &plaintext)?;
+                Ok(ciphertext.into_iter().collect())
+            }
+            EncryptionAlgorithm::AesCtr => {
+                let iv = if let Some(iv) = self.iv.as_ref() {
+                    // println!("about to encrypt: {:?}", String::from_utf8(plaintext.clone()));
+                    iv.to_vec()
+                } else {
+                    let mut csprng = thread_rng();
+                    let mut iv: Vec<u8> = vec![0_u8; 16];
+                    csprng.fill_bytes(&mut iv);
+                    iv
+                };
+                let ciphertext = aes_ctr_encrypt(&self.key, &iv, &plaintext)?;
                 Ok(ciphertext.into_iter().collect())
             }
             EncryptionAlgorithm::AesEcb => {
