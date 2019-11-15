@@ -36,6 +36,40 @@ impl AesCtrMode {
         let cipher = AesCtrCipher::new(&key, &iv, self);
         cipher.encrypt(plaintext)
     }
+
+    pub fn decrypt_at_offset<
+        K: ?Sized + AsRef<[u8]>,
+        IV: ?Sized + AsRef<[u8]>,
+        T: ?Sized + AsRef<[u8]>,
+    >(
+        self,
+        key: &K,
+        iv: &IV,
+        ciphertext: &T,
+        offset: usize,
+    ) -> Result<Vec<u8>, AesError> {
+        let key = AesKey::try_copy_from_slice(key)?;
+        let iv = AesCtrIv::try_copy_from_slice(iv)?;
+        let cipher = AesCtrCipher::new(&key, &iv, self);
+        cipher.decrypt_at_offset(ciphertext, offset)
+    }
+
+    pub fn encrypt_at_offset<
+        K: ?Sized + AsRef<[u8]>,
+        IV: ?Sized + AsRef<[u8]>,
+        T: ?Sized + AsRef<[u8]>,
+    >(
+        self,
+        key: &K,
+        iv: &IV,
+        plaintext: &T,
+        offset: usize,
+    ) -> Result<Vec<u8>, AesError> {
+        let key = AesKey::try_copy_from_slice(key)?;
+        let iv = AesCtrIv::try_copy_from_slice(iv)?;
+        let cipher = AesCtrCipher::new(&key, &iv, self);
+        cipher.encrypt_at_offset(plaintext, offset)
+    }
 }
 
 impl Distribution<AesCtrMode> for rand::distributions::Standard {
@@ -181,12 +215,46 @@ impl<'k, 'iv> AesCtrCipher<'k, 'iv> {
         }
     }
 
+    fn crypt_at_offset<T: ?Sized + AsRef<[u8]>>(
+        &self,
+        input: &T,
+        offset: usize,
+    ) -> Result<Vec<u8>, AesError> {
+        let input = input.as_ref();
+        if input.is_empty() {
+            Ok(vec![])
+        } else {
+            let keystream = AesCtrKeystream::new(&self.key, &self.iv, self.mode);
+            Ok(input
+                .iter()
+                .zip(keystream.skip(offset))
+                .map(|(a, b)| a ^ b)
+                .collect())
+        }
+    }
+
     pub fn decrypt<T: ?Sized + AsRef<[u8]>>(&self, ciphertext: &T) -> Result<Vec<u8>, AesError> {
         self.crypt(ciphertext)
     }
 
     pub fn encrypt<T: ?Sized + AsRef<[u8]>>(&self, plaintext: &T) -> Result<Vec<u8>, AesError> {
         self.crypt(plaintext)
+    }
+
+    pub fn decrypt_at_offset<T: ?Sized + AsRef<[u8]>>(
+        &self,
+        ciphertext: &T,
+        offset: usize,
+    ) -> Result<Vec<u8>, AesError> {
+        self.crypt_at_offset(ciphertext, offset)
+    }
+
+    pub fn encrypt_at_offset<T: ?Sized + AsRef<[u8]>>(
+        &self,
+        plaintext: &T,
+        offset: usize,
+    ) -> Result<Vec<u8>, AesError> {
+        self.crypt_at_offset(plaintext, offset)
     }
 }
 
@@ -252,6 +320,84 @@ pub fn encrypt_nist_sp800_38a<
     plaintext: &T,
 ) -> Result<Vec<u8>, AesError> {
     AesCtrMode::NIST_SP800_38A.encrypt(key, iv, plaintext)
+}
+
+pub fn decrypt_at_offset<
+    K: ?Sized + AsRef<[u8]>,
+    IV: ?Sized + AsRef<[u8]>,
+    T: ?Sized + AsRef<[u8]>,
+>(
+    key: &K,
+    iv: &IV,
+    ciphertext: &T,
+    offset: usize,
+) -> Result<Vec<u8>, AesError> {
+    AesCtrMode::CRYPTOPALS.decrypt_at_offset(key, iv, ciphertext, offset)
+}
+
+pub fn encrypt_at_offset<
+    K: ?Sized + AsRef<[u8]>,
+    IV: ?Sized + AsRef<[u8]>,
+    T: ?Sized + AsRef<[u8]>,
+>(
+    key: &K,
+    iv: &IV,
+    plaintext: &T,
+    offset: usize,
+) -> Result<Vec<u8>, AesError> {
+    AesCtrMode::CRYPTOPALS.encrypt_at_offset(key, iv, plaintext, offset)
+}
+
+pub fn decrypt_at_offset_cryptopals<
+    K: ?Sized + AsRef<[u8]>,
+    IV: ?Sized + AsRef<[u8]>,
+    T: ?Sized + AsRef<[u8]>,
+>(
+    key: &K,
+    iv: &IV,
+    ciphertext: &T,
+    offset: usize,
+) -> Result<Vec<u8>, AesError> {
+    AesCtrMode::CRYPTOPALS.decrypt_at_offset(key, iv, ciphertext, offset)
+}
+
+pub fn encrypt_at_offset_cryptopals<
+    K: ?Sized + AsRef<[u8]>,
+    IV: ?Sized + AsRef<[u8]>,
+    T: ?Sized + AsRef<[u8]>,
+>(
+    key: &K,
+    iv: &IV,
+    plaintext: &T,
+    offset: usize,
+) -> Result<Vec<u8>, AesError> {
+    AesCtrMode::CRYPTOPALS.encrypt_at_offset(key, iv, plaintext, offset)
+}
+
+pub fn decrypt_at_offset_nist_sp800_38a<
+    K: ?Sized + AsRef<[u8]>,
+    IV: ?Sized + AsRef<[u8]>,
+    T: ?Sized + AsRef<[u8]>,
+>(
+    key: &K,
+    iv: &IV,
+    ciphertext: &T,
+    offset: usize,
+) -> Result<Vec<u8>, AesError> {
+    AesCtrMode::NIST_SP800_38A.decrypt_at_offset(key, iv, ciphertext, offset)
+}
+
+pub fn encrypt_at_offset_nist_sp800_38a<
+    K: ?Sized + AsRef<[u8]>,
+    IV: ?Sized + AsRef<[u8]>,
+    T: ?Sized + AsRef<[u8]>,
+>(
+    key: &K,
+    iv: &IV,
+    plaintext: &T,
+    offset: usize,
+) -> Result<Vec<u8>, AesError> {
+    AesCtrMode::NIST_SP800_38A.encrypt_at_offset(key, iv, plaintext, offset)
 }
 
 #[cfg(test)]

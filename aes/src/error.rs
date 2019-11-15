@@ -6,6 +6,10 @@ pub enum AesError {
         explanation: &'static str,
         was: usize,
     },
+    InvalidOffset {
+        length: usize,
+        offset: usize,
+    },
 }
 
 impl std::error::Error for AesError {
@@ -15,6 +19,7 @@ impl std::error::Error for AesError {
             Self::InvalidBlockSize(_) => "invalid block size",
             Self::InvalidKeySize(_) => "invalid key size",
             Self::InvalidInitializationVectorSize { .. } => "invalid initialization vector size",
+            Self::InvalidOffset { .. } => "invalid offset for length of input",
         }
     }
 }
@@ -34,6 +39,11 @@ impl ::core::fmt::Display for AesError {
                 f,
                 "Invalid initialization vector size of '{}' {}",
                 was, explanation
+            ),
+            Self::InvalidOffset { length, offset } => write!(
+                f,
+                "Invalid offset of '{}' for input length of {}",
+                offset, length
             ),
         }
     }

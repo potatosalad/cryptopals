@@ -20,6 +20,7 @@ extern crate serde;
 pub mod set01;
 pub mod set02;
 pub mod set03;
+pub mod set04;
 
 #[cfg(test)]
 mod tests {
