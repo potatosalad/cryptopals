@@ -135,7 +135,6 @@ mod tests {
         assert_eq!(prefix_size, oracle.detect_prefix_size(b'x', b'y').unwrap());
         let ciphertext = oracle.add_cookiestring(";admin=true;").unwrap();
         let cookies = oracle.decrypt_cookies(&ciphertext).unwrap();
-        println!("cookies = {:?}", cookies);
         assert_eq!(
             &("admin".to_string(), "true".to_string()),
             cookies.get(cookies.len() - 2).unwrap()

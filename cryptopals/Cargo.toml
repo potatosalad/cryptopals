@@ -16,6 +16,7 @@ serde = { version = "1.0.102", features = ["derive"] }
 serde_urlencoded = "0.6.1"
 quickcheck = "0.9.0"
 quickcheck_macros = "0.8.0"
+url = "2.1.0"
 aes = { path = "../aes" }
 oracles = { path = "../oracles" }
 pkcs7 = { path = "../pkcs7" }
