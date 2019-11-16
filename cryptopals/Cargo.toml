@@ -18,6 +18,7 @@ quickcheck = "0.9.0"
 quickcheck_macros = "0.8.0"
 url = "2.1.0"
 aes = { path = "../aes" }
+hash = { path = "../hash" }
 oracles = { path = "../oracles" }
 pkcs7 = { path = "../pkcs7" }
 xor = { path = "../xor" }
