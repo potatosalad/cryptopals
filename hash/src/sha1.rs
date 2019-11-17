@@ -140,6 +140,31 @@ fn sha1_circular_shift(bits: u32, word: u32) -> u32 {
 }
 
 impl Sha1Context {
+    pub fn recover(digest: [u8; 20], length: u64) -> Result<Self, &'static str> {
+        use std::convert::TryInto;
+        let mut intermediate_hash: [u32; 5] = [0_u32; 5];
+        for (i, v) in intermediate_hash.iter_mut().enumerate() {
+            *v = u32::from_be_bytes((&digest[(i * 4)..((i + 1) * 4)]).try_into().unwrap());
+        }
+        Sha1ContextBuilder::new()
+            .set_intermediate_hash(intermediate_hash)
+            .set_length(length)
+            .build()
+    }
+
+    pub fn get_intermediate_hash(&self) -> [u32; 5] {
+        self.intermediate_hash
+    }
+
+    pub fn get_length(&self) -> u64 {
+        ((self.length_high as u64) << 32) | (self.length_low as u64)
+    }
+
+    pub fn set_length(&mut self, length: u64) {
+        self.length_low = (length & 0xffff_ffff) as u32;
+        self.length_high = ((length >> 32) & 0xffff_ffff) as u32;
+    }
+
     #[allow(clippy::needless_range_loop)]
     #[allow(non_snake_case)]
     fn process_message_block(&mut self) -> Result<(), Sha1Error> {
@@ -266,10 +291,57 @@ pub fn hash<T: ?Sized + AsRef<[u8]>>(input: &T) -> Sha1Output {
     ctx.output().unwrap()
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct Sha1ContextBuilder {
+    intermediate_hash: Option<[u32; 5]>,
+    length_low: u32,
+    length_high: u32,
+}
+
+impl Sha1ContextBuilder {
+    pub fn new() -> Self {
+        Sha1ContextBuilder::default()
+    }
+
+    pub fn build(&self) -> Result<Sha1Context, &'static str> {
+        if self.intermediate_hash.is_none() {
+            return Err("intermediate_hash is required");
+        }
+        let mut ctx = Sha1Context::default();
+        ctx.intermediate_hash = *self.intermediate_hash.as_ref().unwrap();
+        ctx.length_low = self.length_low;
+        ctx.length_high = self.length_high;
+        Ok(ctx)
+    }
+
+    pub fn set_intermediate_hash(&mut self, value: [u32; 5]) -> &mut Self {
+        self.intermediate_hash = Some(value);
+        self
+    }
+
+    pub fn set_length(&mut self, value: u64) -> &mut Self {
+        self.length_low = (value & 0xffff_ffff) as u32;
+        self.length_high = ((value >> 32) & 0xffff_ffff) as u32;
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn crate_sha1_matches_extern_sha1() {
+        let mut input: Vec<u8> = Vec::new();
+        for _ in 0..1024 {
+            assert_eq!(
+                sha1impl::Sha1::from(input.clone()).digest().bytes()[..],
+                crate::sha1::hash(&input).bytes()[..]
+            );
+            input.push(0x01);
+        }
+    }
+
     #[quickcheck]
-    fn crate_sha1_matches_extern_sha1(input: Vec<u8>) -> bool {
+    fn crate_sha1_matches_extern_sha1_property(input: Vec<u8>) -> bool {
         sha1impl::Sha1::from(input.clone()).digest().bytes()[..]
             == crate::sha1::hash(&input).bytes()[..]
     }

@@ -48,6 +48,10 @@ impl Sha1Mac {
         let challenge = self.authenticate(message);
         constant_time_compare(&challenge, code)
     }
+
+    pub fn get_key_size(&self) -> usize {
+        self.key.len()
+    }
 }
 
 #[cfg(test)]
