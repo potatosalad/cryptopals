@@ -211,6 +211,22 @@ fn md4_hh(a: u32, b: u32, c: u32, d: u32, x: u32, s: u32) -> u32 {
 }
 
 impl Md4Context {
+    pub fn recover(digest: [u8; 16], count: u64) -> Result<Self, &'static str> {
+        use std::convert::TryInto;
+        let mut state: [u32; 4] = [0_u32; 4];
+        for (i, v) in state.iter_mut().enumerate() {
+            *v = u32::from_le_bytes((&digest[(i * 4)..((i + 1) * 4)]).try_into().unwrap());
+        }
+        Md4ContextBuilder::new()
+            .set_state(state)
+            .set_count(count)
+            .build()
+    }
+
+    pub fn get_state(&self) -> [u32; 4] {
+        self.state
+    }
+
     pub fn get_bit_size(&self) -> u64 {
         self.count
     }
@@ -328,6 +344,38 @@ pub fn hash<T: ?Sized + AsRef<[u8]>>(input: &T) -> Md4Output {
     let mut ctx = Md4Context::init();
     ctx.update(input).unwrap();
     ctx.output().unwrap()
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct Md4ContextBuilder {
+    state: Option<[u32; 4]>,
+    count: u64,
+}
+
+impl Md4ContextBuilder {
+    pub fn new() -> Self {
+        Md4ContextBuilder::default()
+    }
+
+    pub fn build(&self) -> Result<Md4Context, &'static str> {
+        if self.state.is_none() {
+            return Err("state is required");
+        }
+        let mut ctx = Md4Context::default();
+        ctx.state = *self.state.as_ref().unwrap();
+        ctx.count = self.count;
+        Ok(ctx)
+    }
+
+    pub fn set_state(&mut self, value: [u32; 4]) -> &mut Self {
+        self.state = Some(value);
+        self
+    }
+
+    pub fn set_count(&mut self, value: u64) -> &mut Self {
+        self.count = value;
+        self
+    }
 }
 
 #[cfg(test)]
