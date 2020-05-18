@@ -1,4 +1,5 @@
 pub mod encryption_oracle;
+pub mod timing_leak_oracle;
 
 #[cfg(test)]
 mod tests {

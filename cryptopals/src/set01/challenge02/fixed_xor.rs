@@ -6,16 +6,6 @@ pub enum FixedXorError {
     Base16(Base16DecoderError),
 }
 
-impl std::error::Error for FixedXorError {
-    #[must_use]
-    fn description(&self) -> &str {
-        match *self {
-            Self::MustBeEqualLength => "inputs must be of equal length",
-            Self::Base16(ref err) => err.description(),
-        }
-    }
-}
-
 impl ::core::fmt::Display for FixedXorError {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
         match *self {

@@ -10,3 +10,4 @@ edition = "2018"
 aes = { path = "../aes" }
 pkcs7 = { path = "../pkcs7" }
 rand = "0.7.2"
+async-trait = "0.1.31"

@@ -8,20 +8,25 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-base64 = "0.11.0"
-hex = "0.4.0"
+base64 = "0.12.1"
+hex = "0.4.2"
 lazy_static = "1.4.0"
-rand = "0.7.2"
-serde = { version = "1.0.102", features = ["derive"] }
+rand = "0.7.3"
+reqwest = "0.10.4"
+serde = { version = "1.0.110", features = ["derive"] }
 serde_urlencoded = "0.6.1"
 quickcheck = "0.9.2"
 quickcheck_macros = "0.9.1"
-url = "2.1.0"
+tokio = { version = "0.2", features = ["full"] }
+url = "2.1.1"
+warp = "0.2.2"
 aes = { path = "../aes" }
 hash = { path = "../hash" }
+mac = { path = "../mac" }
 oracles = { path = "../oracles" }
 pkcs7 = { path = "../pkcs7" }
 xor = { path = "../xor" }
+async-trait = "0.1.31"
 
 [build-dependencies]
 cc = { version = "1.0.47", features = ["parallel"] }
