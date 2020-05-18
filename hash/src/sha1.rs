@@ -132,6 +132,14 @@ impl FixedHashContext for Sha1Context {
         self.computed = false;
         self.corrupted = false;
     }
+
+    fn block_size() -> usize {
+        64
+    }
+
+    fn hash_size() -> usize {
+        20
+    }
 }
 
 #[inline]

@@ -11,6 +11,6 @@ hex = "0.4.0"
 
 [dev-dependencies]
 md4impl = { package = "md4", version = "0.8.0" }
-quickcheck = "0.9.0"
-quickcheck_macros = "0.8.0"
+quickcheck = "0.9.2"
+quickcheck_macros = "0.9.1"
 sha1impl = { package = "sha1", version = "0.6.0" }

@@ -5,6 +5,8 @@ pub trait FixedHashContext: Clone {
     fn update<T: ?Sized + AsRef<[u8]>>(&mut self, input: &T) -> Result<(), Self::Error>;
     fn output(&mut self) -> Result<Self::Output, Self::Error>;
     fn reset(&mut self);
+    fn block_size() -> usize;
+    fn hash_size() -> usize;
 }
 
 pub trait FixedHashOutput: Clone {

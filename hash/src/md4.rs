@@ -127,6 +127,14 @@ impl FixedHashContext for Md4Context {
         self.computed = false;
         self.corrupted = false;
     }
+
+    fn block_size() -> usize {
+        64
+    }
+
+    fn hash_size() -> usize {
+        16
+    }
 }
 
 #[inline]
