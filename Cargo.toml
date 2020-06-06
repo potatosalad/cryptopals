@@ -4,6 +4,7 @@ members = [
     "aes",
     "cryptopals",
     "hash",
+    "kex",
     "mac",
     "oracles",
     "pkcs7",

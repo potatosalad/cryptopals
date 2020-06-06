@@ -8,6 +8,7 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-trait = "0.1.31"
 base64 = "0.12.1"
 hex = "0.4.2"
 lazy_static = "1.4.0"
@@ -22,11 +23,11 @@ url = "2.1.1"
 warp = "0.2.2"
 aes = { path = "../aes" }
 hash = { path = "../hash" }
+kex = { path = "../kex" }
 mac = { path = "../mac" }
 oracles = { path = "../oracles" }
 pkcs7 = { path = "../pkcs7" }
 xor = { path = "../xor" }
-async-trait = "0.1.31"
 
 [build-dependencies]
 cc = { version = "1.0.47", features = ["parallel"] }
