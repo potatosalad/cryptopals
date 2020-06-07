@@ -16,6 +16,12 @@ mod tests {
         let b_public_key = b_secret_key.to_public_key();
         let a_shared_secret = a_secret_key.compute_shared_secret(&b_public_key).unwrap();
         let b_shared_secret = b_secret_key.compute_shared_secret(&a_public_key).unwrap();
+        println!("a_secret_key = {:?}", a_secret_key);
+        println!("a_public_key = {:?}", a_public_key);
+        println!("b_secret_key = {:?}", b_secret_key);
+        println!("b_public_key = {:?}", b_public_key);
+        println!("a_shared_secret = {:?}", a_shared_secret);
+        println!("b_shared_secret = {:?}", b_shared_secret);
         assert_eq!(a_shared_secret, b_shared_secret);
     }
 

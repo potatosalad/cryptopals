@@ -5,8 +5,8 @@ use rand::prelude::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DiffieHellmanBase {
-    p: BigUint,
-    g: BigUint,
+    pub p: BigUint,
+    pub g: BigUint,
 }
 
 impl DiffieHellmanBase {
@@ -30,9 +30,9 @@ impl DiffieHellmanBase {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DiffieHellmanSecretKey {
-    base: DiffieHellmanBase,
-    secret: BigUint,
-    public: BigUint,
+    pub base: DiffieHellmanBase,
+    pub secret: BigUint,
+    pub public: BigUint,
 }
 
 impl DiffieHellmanSecretKey {
@@ -70,8 +70,8 @@ impl DiffieHellmanSecretKey {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DiffieHellmanPublicKey {
-    base: DiffieHellmanBase,
-    public: BigUint,
+    pub base: DiffieHellmanBase,
+    pub public: BigUint,
 }
 
 impl DiffieHellmanPublicKey {
@@ -89,8 +89,8 @@ impl From<DiffieHellmanSecretKey> for DiffieHellmanPublicKey {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DiffieHellmanSharedSecret {
-    base: DiffieHellmanBase,
-    shared_secret: BigUint,
+    pub base: DiffieHellmanBase,
+    pub shared_secret: BigUint,
 }
 
 impl DiffieHellmanSharedSecret {
