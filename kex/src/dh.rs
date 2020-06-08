@@ -3,6 +3,8 @@ use num_bigint_dig::{RandBigInt, RandPrime};
 pub use num_traits::Num;
 use rand::prelude::*;
 
+pub use num_traits;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct DiffieHellmanBase {
     pub p: BigUint,
@@ -22,8 +24,12 @@ impl DiffieHellmanBase {
     }
 
     pub fn gen_secret_key(&self) -> DiffieHellmanSecretKey {
+        use num_traits::Zero;
         let mut rng = thread_rng();
-        let secret = rng.gen_biguint(self.p.bits());
+        let mut secret = rng.gen_biguint(self.p.bits());
+        while secret.is_zero() && self.p.bits() > 0 {
+            secret = rng.gen_biguint(self.p.bits());
+        }
         DiffieHellmanSecretKey::new(self.clone(), secret)
     }
 }
