@@ -13,3 +13,4 @@ extern crate quickcheck;
 extern crate quickcheck_macros;
 
 pub mod dh;
+pub mod srp;

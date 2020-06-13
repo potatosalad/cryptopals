@@ -19,3 +19,4 @@ extern crate sha1impl;
 pub mod fixed_hash;
 pub mod md4;
 pub mod sha1;
+pub mod sha256;

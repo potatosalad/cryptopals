@@ -3,6 +3,7 @@
 use hash::fixed_hash::{FixedHashContext, FixedHashOutput};
 use hash::md4::{Md4Context, Md4Output};
 use hash::sha1::{Sha1Context, Sha1Output};
+use hash::sha256::{Sha256Context, Sha256Output};
 use xor::sxor::sxor;
 
 #[derive(Clone)]
@@ -80,6 +81,7 @@ impl<H: FixedHashContext> HmacContext<H> {
 
 pub type HmacMd4Context = HmacContext<Md4Context>;
 pub type HmacSha1Context = HmacContext<Sha1Context>;
+pub type HmacSha256Context = HmacContext<Sha256Context>;
 
 pub fn hmac_md4<K: ?Sized + AsRef<[u8]>, T: ?Sized + AsRef<[u8]>>(key: &K, input: &T) -> Md4Output {
     let mut ctx = HmacMd4Context::new(key).unwrap();
@@ -92,6 +94,15 @@ pub fn hmac_sha1<K: ?Sized + AsRef<[u8]>, T: ?Sized + AsRef<[u8]>>(
     input: &T,
 ) -> Sha1Output {
     let mut ctx = HmacSha1Context::new(key).unwrap();
+    ctx.update(input).unwrap();
+    ctx.output().unwrap()
+}
+
+pub fn hmac_sha256<K: ?Sized + AsRef<[u8]>, T: ?Sized + AsRef<[u8]>>(
+    key: &K,
+    input: &T,
+) -> Sha256Output {
+    let mut ctx = HmacSha256Context::new(key).unwrap();
     ctx.update(input).unwrap();
     ctx.output().unwrap()
 }
