@@ -220,7 +220,6 @@ fn md4_hh(a: u32, b: u32, c: u32, d: u32, x: u32, s: u32) -> u32 {
 
 impl Md4Context {
     pub fn recover(digest: [u8; 16], count: u64) -> Result<Self, &'static str> {
-        use std::convert::TryInto;
         let mut state: [u32; 4] = [0_u32; 4];
         for (i, v) in state.iter_mut().enumerate() {
             *v = u32::from_le_bytes((&digest[(i * 4)..((i + 1) * 4)]).try_into().unwrap());

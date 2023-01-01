@@ -74,7 +74,7 @@ impl AesCtrMode {
 
 impl Distribution<AesCtrMode> for rand::distributions::Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> AesCtrMode {
-        match rng.gen_range(0, 2) {
+        match rng.gen_range(0..2) {
             0 => AesCtrMode::NIST_SP800_38A,
             _ => AesCtrMode::CRYPTOPALS,
         }
@@ -82,8 +82,10 @@ impl Distribution<AesCtrMode> for rand::distributions::Standard {
 }
 
 impl Arbitrary for AesCtrMode {
-    fn arbitrary<G: Gen>(g: &mut G) -> AesCtrMode {
-        g.gen()
+    fn arbitrary(g: &mut Gen) -> AesCtrMode {
+        g.choose(&[AesCtrMode::CRYPTOPALS, AesCtrMode::NIST_SP800_38A])
+            .unwrap()
+            .clone()
     }
 }
 
@@ -147,8 +149,25 @@ impl Distribution<AesCtrIv> for rand::distributions::Standard {
 }
 
 impl Arbitrary for AesCtrIv {
-    fn arbitrary<G: Gen>(g: &mut G) -> AesCtrIv {
-        g.gen()
+    fn arbitrary(g: &mut Gen) -> AesCtrIv {
+        AesCtrIv([
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+        ])
     }
 
     fn shrink(&self) -> Box<dyn Iterator<Item = AesCtrIv>> {

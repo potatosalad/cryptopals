@@ -360,11 +360,30 @@ impl<'co> MersenneTwister<'co, u64> {
     }
 
     pub fn untemper(&self, mut y: u64) -> u64 {
-        y = inverse_bitshift_right_xor_u64(y, self.co.l as u64, self.co.w as u64);
-        y = inverse_bitshift_left_xor_u64(y, self.co.t as u64, self.co.w as u64, self.co.c);
-        y = inverse_bitshift_left_xor_u64(y, self.co.s as u64, self.co.w as u64, self.co.b);
-        y = inverse_bitshift_right_xor_u64(y, self.co.u as u64, self.co.w as u64);
-        y
+        if self.co.w == 64 {
+            // reverse "y ^=  y >> 43;"
+            y ^= y >> self.co.l as u64;
+
+            // reverse "y ^= (y << 37) & 0xFFF7EEE000000000;"
+            y ^= (y << self.co.t as u64) & self.co.c as u64;
+
+            // reverse "y ^= (y << 17) & 0x71D67FFFEDA60000;"
+            y ^= (y << self.co.s as u64) & 0x00000003eda60000;
+            y ^= (y << self.co.s as u64) & 0x00067ffc00000000;
+            y ^= (y << self.co.s as u64) & 0x71d0000000000000;
+
+            // reverse "y ^= (y >> 29) & 0x5555555555555555;"
+            y ^= (y >> self.co.u as u64) & 0x0000000555555540;
+            y ^= (y >> self.co.u as u64) & 0x0000000000000015;
+
+            y
+        } else {
+            y = inverse_bitshift_right_xor_u64(y, self.co.l as u64, self.co.w as u64);
+            y = inverse_bitshift_left_xor_u64(y, self.co.t as u64, self.co.w as u64, self.co.c);
+            y = inverse_bitshift_left_xor_u64(y, self.co.s as u64, self.co.w as u64, self.co.b);
+            y = inverse_bitshift_right_xor_u64(y, self.co.u as u64, self.co.w as u64);
+            y
+        }
     }
 }
 

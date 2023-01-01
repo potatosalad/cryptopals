@@ -45,8 +45,25 @@ impl Distribution<AesCbcIv> for rand::distributions::Standard {
 }
 
 impl Arbitrary for AesCbcIv {
-    fn arbitrary<G: Gen>(g: &mut G) -> AesCbcIv {
-        g.gen()
+    fn arbitrary(g: &mut Gen) -> AesCbcIv {
+        AesCbcIv([
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+            u8::arbitrary(g),
+        ])
     }
 
     fn shrink(&self) -> Box<dyn Iterator<Item = AesCbcIv>> {

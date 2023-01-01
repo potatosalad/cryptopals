@@ -1,7 +1,6 @@
 use aes::cbc::{AesCbcCipher, AesCbcIv};
 use kex::dh::*;
 
-use futures::stream::StreamExt;
 use tokio::net::TcpListener;
 
 use super::protocol::*;
@@ -190,30 +189,34 @@ impl ManInTheMiddleServer {
     ) -> tokio::io::Result<Self> {
         let messages: ManInTheMiddlePairs = Arc::new(RwLock::new(Vec::new()));
         let msgs = messages.clone();
-        let server_addr = server_addr.to_socket_addrs().await?.next().unwrap();
-        let mut listener = TcpListener::bind("127.0.0.1:0").await?;
+        let server_addr = tokio::net::lookup_host(server_addr).await?.next().unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").await?;
         let addr = listener.local_addr().unwrap();
         let (tx, rx) = tokio::sync::oneshot::channel();
         let join_handle = tokio::spawn(async move {
-            let mut incoming = listener.incoming().take_until(rx);
-            while let Some(client_stream) = incoming.next().await {
-                match client_stream {
-                    Ok(client_stream) => {
-                        // println!("[server] new client: {:?}", client_stream);
-                        let messages = messages.clone();
-                        tokio::spawn(async move {
-                            let server_stream =
-                                tokio::net::TcpStream::connect(server_addr).await.unwrap();
-                            ManInTheMiddleInit::new(kind, messages, client_stream, server_stream)
-                                .run()
-                                .await
-                                .unwrap();
-                        });
+            tokio::select! {
+                _ = async {
+                    loop {
+                        match listener.accept().await {
+                            Ok((client_stream, _)) => {
+                                // println!("[server] new client: {:?}", client_stream);
+                                let messages = messages.clone();
+                                tokio::spawn(async move {
+                                    let server_stream =
+                                        tokio::net::TcpStream::connect(server_addr).await.unwrap();
+                                    ManInTheMiddleInit::new(kind, messages, client_stream, server_stream)
+                                        .run()
+                                        .await
+                                        .unwrap();
+                                });
+                            }
+                            Err(e) => {
+                                eprintln!("connection failed: {:?}", e);
+                            }
+                        }
                     }
-                    Err(e) => {
-                        eprintln!("connection failed: {:?}", e);
-                    }
-                }
+                } => {}
+                _ = rx => {}
             }
         });
         Ok(Self {

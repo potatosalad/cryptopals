@@ -149,7 +149,6 @@ fn sha1_circular_shift(bits: u32, word: u32) -> u32 {
 
 impl Sha1Context {
     pub fn recover(digest: [u8; 20], length: u64) -> Result<Self, &'static str> {
-        use std::convert::TryInto;
         let mut intermediate_hash: [u32; 5] = [0_u32; 5];
         for (i, v) in intermediate_hash.iter_mut().enumerate() {
             *v = u32::from_be_bytes((&digest[(i * 4)..((i + 1) * 4)]).try_into().unwrap());
@@ -338,10 +337,11 @@ impl Sha1ContextBuilder {
 mod tests {
     #[test]
     fn crate_sha1_matches_extern_sha1() {
+        use sha1impl::Digest;
         let mut input: Vec<u8> = Vec::new();
         for _ in 0..1024 {
             assert_eq!(
-                sha1impl::Sha1::from(input.clone()).digest().bytes()[..],
+                sha1impl::Sha1::digest(input.clone())[..],
                 crate::sha1::hash(&input).bytes()[..]
             );
             input.push(0x01);
@@ -350,7 +350,7 @@ mod tests {
 
     #[quickcheck]
     fn crate_sha1_matches_extern_sha1_property(input: Vec<u8>) -> bool {
-        sha1impl::Sha1::from(input.clone()).digest().bytes()[..]
-            == crate::sha1::hash(&input).bytes()[..]
+        use sha1impl::Digest;
+        sha1impl::Sha1::digest(input.clone())[..] == crate::sha1::hash(&input).bytes()[..]
     }
 }

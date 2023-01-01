@@ -9,7 +9,7 @@ pub enum AesEcbBlockCipher {
 
 impl AesEcbBlockCipher {
     pub fn new(aes_key: &AesKey) -> Self {
-        use aesimpl::block_cipher_trait::{generic_array::GenericArray, BlockCipher};
+        use aesimpl::cipher::{generic_array::GenericArray, KeyInit};
         match aes_key {
             AesKey::Aes128Key(ref key) => Self::Aes128BlockCipher(Box::new(aesimpl::Aes128::new(
                 &GenericArray::clone_from_slice(&key[..]),
@@ -29,7 +29,7 @@ impl AesEcbBlockCipher {
     ) -> Result<Vec<u8>, AesError> {
         let ciphertext = ciphertext.as_ref();
         if ciphertext.len() == 16 {
-            use aesimpl::block_cipher_trait::{generic_array::GenericArray, BlockCipher};
+            use aesimpl::cipher::{generic_array::GenericArray, BlockDecrypt};
             let mut plaintext = GenericArray::clone_from_slice(ciphertext);
             match self {
                 Self::Aes128BlockCipher(aes128) => aes128.decrypt_block(&mut plaintext),
@@ -48,7 +48,7 @@ impl AesEcbBlockCipher {
     ) -> Result<Vec<u8>, AesError> {
         let plaintext = plaintext.as_ref();
         if plaintext.len() == 16 {
-            use aesimpl::block_cipher_trait::{generic_array::GenericArray, BlockCipher};
+            use aesimpl::cipher::{generic_array::GenericArray, BlockEncrypt};
             let mut ciphertext = GenericArray::clone_from_slice(plaintext);
             match self {
                 Self::Aes128BlockCipher(aes128) => aes128.encrypt_block(&mut ciphertext),

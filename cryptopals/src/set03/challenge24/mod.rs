@@ -311,7 +311,7 @@ mod tests {
         let mut csprng = thread_rng();
         let seed: u16 = csprng.gen();
         let keystream = MersenneTwister19937Keystream::from(seed);
-        let prefix_len: usize = csprng.gen_range(1, 255);
+        let prefix_len: usize = csprng.gen_range(1..=255);
         let plaintext = {
             let mut v: Vec<u8> = std::iter::repeat_with(|| csprng.gen())
                 .take(prefix_len)
@@ -347,7 +347,7 @@ mod tests {
         let mut csprng = thread_rng();
         let seed: u16 = csprng.gen();
         let keystream = MersenneTwister19937_64Keystream::from(seed);
-        let prefix_len: usize = csprng.gen_range(1, 255);
+        let prefix_len: usize = csprng.gen_range(1..=255);
         let plaintext = {
             let mut v: Vec<u8> = std::iter::repeat_with(|| csprng.gen())
                 .take(prefix_len)

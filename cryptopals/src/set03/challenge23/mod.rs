@@ -62,4 +62,15 @@ mod tests {
         let untempered = mt.untemper(tempered);
         value == untempered
     }
+
+    #[test]
+    fn mt19937_64_temper_and_untemper_check() {
+        let seed: u64 = 0;
+        let value: u64 = 1073741824;
+        let mt = mt19937_64_init(seed);
+        let tempered = mt.temper(value);
+        println!("tempered = {:?}", tempered);
+        let untempered = mt.untemper(tempered);
+        assert_eq!(value, untempered);
+    }
 }

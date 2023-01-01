@@ -59,6 +59,13 @@ mod tests {
 
     #[quickcheck]
     fn encode_no_padding_and_base64_encode_config_standard_no_pad_matches(xs: Vec<u8>) -> bool {
-        super::encode_no_padding(&xs) == base64::encode_config(&xs, base64::STANDARD_NO_PAD)
+        super::encode_no_padding(&xs)
+            == base64::encode_engine(
+                &xs,
+                &base64::engine::fast_portable::FastPortable::from(
+                    &base64::alphabet::STANDARD,
+                    base64::engine::fast_portable::NO_PAD,
+                ),
+            )
     }
 }

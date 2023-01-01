@@ -2,7 +2,7 @@ use aes::cbc::{AesCbcCipher, AesCbcIv};
 use kex::dh::*;
 
 use rand::prelude::*;
-use tokio::prelude::*;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::protocol::*;
 

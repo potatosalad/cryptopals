@@ -154,9 +154,9 @@ mod tests {
     fn crack_an_mt19937_seed() {
         let mut csprng = thread_rng();
         let mut system_time = FakeSystemSeconds::now();
-        system_time.sleep(Duration::from_secs(csprng.gen_range(40, 1000)));
+        system_time.sleep(Duration::from_secs(csprng.gen_range(40..=1000)));
         let mut oracle = OracleU32::new(system_time.as_secs() as u32);
-        system_time.sleep(Duration::from_secs(csprng.gen_range(40, 1000)));
+        system_time.sleep(Duration::from_secs(csprng.gen_range(40..=1000)));
         let output = oracle.generate();
         let solution = brute_force_an_mt19937_seed(output, 2).unwrap();
         assert!(oracle.verify_seed(solution));
@@ -167,9 +167,9 @@ mod tests {
     fn crack_an_mt19937_64_seed() {
         let mut csprng = thread_rng();
         let mut system_time = FakeSystemSeconds::now();
-        system_time.sleep(Duration::from_secs(csprng.gen_range(40, 1000)));
+        system_time.sleep(Duration::from_secs(csprng.gen_range(40..=1000)));
         let mut oracle = OracleU64::new(system_time.as_secs());
-        system_time.sleep(Duration::from_secs(csprng.gen_range(40, 1000)));
+        system_time.sleep(Duration::from_secs(csprng.gen_range(40..=1000)));
         let output = oracle.generate();
         let solution = brute_force_an_mt19937_64_seed(output, 2).unwrap();
         assert!(oracle.verify_seed(solution));

@@ -64,7 +64,7 @@ impl AesKey {
 
 impl Distribution<AesKey> for rand::distributions::Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> AesKey {
-        match rng.gen_range(0, 3) {
+        match rng.gen_range(0..3) {
             0 => AesKey::Aes128Key(rng.gen()),
             1 => AesKey::Aes192Key(rng.gen()),
             _ => AesKey::Aes256Key(rng.gen()),
@@ -73,8 +73,87 @@ impl Distribution<AesKey> for rand::distributions::Standard {
 }
 
 impl Arbitrary for AesKey {
-    fn arbitrary<G: Gen>(g: &mut G) -> AesKey {
-        g.gen()
+    fn arbitrary(g: &mut Gen) -> AesKey {
+        match g.choose(&[0, 1, 2]).unwrap() {
+            0 => AesKey::Aes128Key([
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+            ]),
+            1 => AesKey::Aes192Key([
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+            ]),
+            _ => AesKey::Aes256Key([
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+                u8::arbitrary(g),
+            ]),
+        }
     }
 
     fn shrink(&self) -> Box<dyn Iterator<Item = AesKey>> {

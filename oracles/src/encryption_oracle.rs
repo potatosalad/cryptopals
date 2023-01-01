@@ -108,9 +108,9 @@ impl EncryptionContext {
         padding_algorithm: PaddingAlgorithm,
     ) -> Self {
         let mut csprng = thread_rng();
-        let mut prefix = vec![0_u8; csprng.gen_range(5, 10)];
+        let mut prefix = vec![0_u8; csprng.gen_range(5..10)];
         csprng.fill_bytes(&mut prefix);
-        let mut suffix = vec![0_u8; csprng.gen_range(5, 10)];
+        let mut suffix = vec![0_u8; csprng.gen_range(5..10)];
         csprng.fill_bytes(&mut suffix);
         Self::new(
             key,
@@ -126,7 +126,7 @@ impl EncryptionContext {
         match encryption_algorithm {
             EncryptionAlgorithm::AesCbc
             | EncryptionAlgorithm::AesCtr
-            | EncryptionAlgorithm::AesEcb => match csprng.gen_range(0, 3) {
+            | EncryptionAlgorithm::AesEcb => match csprng.gen_range(0..3) {
                 0 => {
                     let mut key = vec![0_u8; 16];
                     csprng.fill_bytes(&mut key);

@@ -6,7 +6,7 @@ pub fn random_prefix_and_key_oracle(suffix: &[u8]) -> Challenge12Oracle {
     let mut csprng = thread_rng();
     let mut key: [u8; 16] = [0_u8; 16];
     csprng.fill_bytes(&mut key);
-    let mut prefix: Vec<u8> = vec![0_u8; csprng.gen_range(1_usize, 200_usize)];
+    let mut prefix: Vec<u8> = vec![0_u8; csprng.gen_range(1_usize..=200_usize)];
     csprng.fill_bytes(&mut prefix);
     Challenge12Oracle::new(&key, prefix.as_slice(), suffix)
 }

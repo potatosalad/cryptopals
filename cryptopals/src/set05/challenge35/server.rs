@@ -1,7 +1,6 @@
 use aes::cbc::{AesCbcCipher, AesCbcIv};
 use kex::dh::*;
 
-use futures::stream::StreamExt;
 use rand::prelude::*;
 use tokio::net::TcpListener;
 
@@ -107,23 +106,27 @@ impl EchoBotStateReady {
 
 impl EchoBotServer {
     pub async fn start() -> tokio::io::Result<Self> {
-        let mut listener = TcpListener::bind("127.0.0.1:0").await?;
+        let listener = TcpListener::bind("127.0.0.1:0").await?;
         let addr = listener.local_addr().unwrap();
         let (tx, rx) = tokio::sync::oneshot::channel();
         let join_handle = tokio::spawn(async move {
-            let mut incoming = listener.incoming().take_until(rx);
-            while let Some(stream) = incoming.next().await {
-                match stream {
-                    Ok(stream) => {
-                        // println!("[server] new client: {:?}", stream);
-                        tokio::spawn(async {
-                            EchoBotStateInit::new(stream).run().await.unwrap();
-                        });
+            tokio::select! {
+                _ = async {
+                    loop {
+                        match listener.accept().await {
+                            Ok((stream, _)) => {
+                                // println!("[server] new client: {:?}", stream);
+                                tokio::spawn(async {
+                                    EchoBotStateInit::new(stream).run().await.unwrap();
+                                });
+                            }
+                            Err(e) => {
+                                eprintln!("connection failed: {:?}", e);
+                            }
+                        }
                     }
-                    Err(e) => {
-                        eprintln!("connection failed: {:?}", e);
-                    }
-                }
+                } => {}
+                _ = rx => {}
             }
         });
         Ok(Self {

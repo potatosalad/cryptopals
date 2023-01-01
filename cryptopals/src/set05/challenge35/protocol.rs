@@ -1,6 +1,6 @@
 pub use kex::dh::*;
 pub use serde::{Deserialize, Serialize};
-pub use tokio::prelude::*;
+pub use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EchoBotHandshakeNegotiate {

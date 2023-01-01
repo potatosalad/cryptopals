@@ -21,7 +21,6 @@ impl Sha1KeyedLengthExtensionAttack {
         message: &T,
         max_key_size: usize,
     ) -> Result<Self, &'static str> {
-        use std::convert::TryInto;
         let message_size: usize = message.as_ref().len();
         let mac = oracle.authenticate(&message);
         let digest: [u8; 20] = (&mac[..]).try_into().unwrap();

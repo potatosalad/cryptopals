@@ -19,7 +19,7 @@ pub async fn insecure_compare<A: ?Sized + AsRef<[u8]>, B: ?Sized + AsRef<[u8]>>(
                 return false;
             }
             if let Some(delay) = delay {
-                tokio::time::delay_for(delay).await;
+                tokio::time::sleep(delay).await;
             }
         }
         true
@@ -69,9 +69,8 @@ impl ArtificialTimingLeakServer {
                 rx.await.ok();
             });
         let join_handle = std::thread::spawn(move || {
-            let mut rt = tokio::runtime::Builder::new()
-                .threaded_scheduler()
-                .core_threads(1)
+            let rt = tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(1)
                 .enable_all()
                 .build()
                 .unwrap();
@@ -173,12 +172,14 @@ mod tests {
     async fn implement_and_break_hmac_sha1_with_an_artificial_timing_leak() {
         let rng = thread_rng();
         let key: Vec<u8> = rng
+            .clone()
             .sample_iter(rand::distributions::Standard)
             .take(20)
             .collect();
         let file: String = rng
             .sample_iter(rand::distributions::Alphanumeric)
             .take(20)
+            .map(char::from)
             .collect();
         let hmac_length = 20;
         let rounds = 3;

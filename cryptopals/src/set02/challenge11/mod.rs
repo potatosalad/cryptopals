@@ -66,6 +66,7 @@ mod tests {
 
     #[quickcheck]
     fn encryption_oracle_detects_aes_ecb_mode(x: usize) -> bool {
+        let x = x % 21841; // prime, results in maximum of roughly 1MB
         let plaintext = vec![0u8; 16 * (3 + x)];
         let oracle = Oracle::default();
         let ciphertext: Vec<u8> = oracle.encrypt(&plaintext).unwrap();

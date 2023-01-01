@@ -22,7 +22,7 @@ impl Sha1Mac {
     pub fn random() -> Self {
         use rand::prelude::*;
         let mut csprng = thread_rng();
-        let size: usize = csprng.gen_range(1, 128);
+        let size: usize = csprng.gen_range(1..=128);
         let mut key: Vec<u8> = vec![0_u8; size];
         csprng.fill_bytes(&mut key);
         Self::new(key)

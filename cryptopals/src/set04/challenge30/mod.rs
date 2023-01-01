@@ -24,7 +24,7 @@ impl Md4Mac {
     pub fn random() -> Self {
         use rand::prelude::*;
         let mut csprng = thread_rng();
-        let size: usize = csprng.gen_range(1, 128);
+        let size: usize = csprng.gen_range(1..=128);
         let mut key: Vec<u8> = vec![0_u8; size];
         csprng.fill_bytes(&mut key);
         Self::new(key)
@@ -75,7 +75,6 @@ impl Md4KeyedLengthExtensionAttack {
         message: &T,
         max_key_size: usize,
     ) -> Result<Self, &'static str> {
-        use std::convert::TryInto;
         let message_size: usize = message.as_ref().len();
         let mac = oracle.authenticate(&message);
         let digest: [u8; 16] = (&mac[..]).try_into().unwrap();
